@@ -236,7 +236,7 @@ func (s *CloudRecordingService) StopRecording(c *gin.Context) {
 		recordingMode = *clientStopReq.RecordingMode
 	}
 	// Send Stop Recording Request to Agora
-	response, err := s.HandleStopRecording(stopReq, clientStopReq.ResourceId, clientStopReq.RecordingId, recordingMode)
+	response, err := s.HandleStopRecording(stopReq, clientStopReq.ResourceId, clientStopReq.Sid, recordingMode)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -255,14 +255,39 @@ func (s *CloudRecordingService) GetStatus(c *gin.Context) {
 func (s *CloudRecordingService) UpdateSubscriptionList(c *gin.Context) {
 	var req = c.Request
 	var respWriter = c.Writer
-	var updateReq StartRecordingRequest
-	err := json.NewDecoder(req.Body).Decode(&updateReq)
+	var clientUpdateReq ClientUpdateRecordingRequest
+	err := json.NewDecoder(req.Body).Decode(&clientUpdateReq)
 	if err != nil {
 		// invalid request
 		http.Error(respWriter, err.Error(), http.StatusBadRequest)
 		return
 	}
-	s.HandleUpdateSubscriptionList(updateReq, respWriter)
+	// Validate the update request
+	if !clientUpdateReq.UpdateConfig.IsValid() {
+		http.Error(respWriter, "Invalid update configuration", http.StatusBadRequest)
+		return
+	}
+	// build the stop request from user request
+	updateReq := UpdateRecordingRequest{
+		Cname:         clientUpdateReq.Cname,
+		Uid:           clientUpdateReq.Uid,
+		ClientRequest: clientUpdateReq.UpdateConfig,
+	}
+
+	recordingMode := "mix"
+	if clientUpdateReq.RecordingMode != nil {
+		recordingMode = *clientUpdateReq.RecordingMode
+	}
+
+	// Send Stop Recording Request to Agora
+	response, err := s.HandleUpdateSubscriptionList(updateReq, clientUpdateReq.ResourceId, clientUpdateReq.Sid, recordingMode)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return the wrapped Agora response
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 // UpdateLayout
