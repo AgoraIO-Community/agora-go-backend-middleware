@@ -19,7 +19,7 @@ import (
 //
 // Notes:
 //   - This function assumes the presence of s.baseURL, s.appID, s.customerID, and s.customerCertificate for constructing the API request.
-func (s *CloudRecordingService) HandleUpdateSubscriptionList(updateReq UpdateRecordingRequest, resourceId string, recordingId string, modeType string) (json.RawMessage, error) {
+func (s *CloudRecordingService) HandleUpdateSubscriptionList(updateReq UpdateSubscriptionRequest, resourceId string, recordingId string, modeType string) (json.RawMessage, error) {
 
 	// build update recording endpoint
 	url := fmt.Sprintf("%s/%s/cloud_recording/resourceid/%s/sid/%s/mode/%s/update", s.baseURL, s.appID, resourceId, recordingId, modeType)
@@ -34,7 +34,7 @@ func (s *CloudRecordingService) HandleUpdateSubscriptionList(updateReq UpdateRec
 	var response UpdateRecordingResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return []byte{}, fmt.Errorf("error parsing response body into StopRecordingResponse: %v", err)
+		return []byte{}, fmt.Errorf("error parsing response body into UpdateRecordingResponse: %v", err)
 	}
 
 	// Add timestamp to Agora response
