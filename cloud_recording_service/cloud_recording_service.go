@@ -201,10 +201,9 @@ func (s *CloudRecordingService) StartRecording(c *gin.Context) {
 
 // StopRecording
 func (s *CloudRecordingService) StopRecording(c *gin.Context) {
-	var req = c.Request
 	var respWriter = c.Writer
 	var clientStopReq ClientStopRecordingRequest
-	err := json.NewDecoder(req.Body).Decode(&clientStopReq)
+	err := json.NewDecoder(c.Request.Body).Decode(&clientStopReq)
 	if err != nil {
 		// invalid request
 		http.Error(respWriter, err.Error(), http.StatusBadRequest)
@@ -241,10 +240,9 @@ func (s *CloudRecordingService) GetStatus(c *gin.Context) {
 
 // UpdateSubscriptionList
 func (s *CloudRecordingService) UpdateSubscriptionList(c *gin.Context) {
-	var req = c.Request
 	var respWriter = c.Writer
 	var clientUpdateReq ClientUpdateRecordingRequest
-	err := json.NewDecoder(req.Body).Decode(&clientUpdateReq)
+	err := json.NewDecoder(c.Request.Body).Decode(&clientUpdateReq)
 	if err != nil {
 		// invalid request
 		http.Error(respWriter, err.Error(), http.StatusBadRequest)
@@ -280,10 +278,9 @@ func (s *CloudRecordingService) UpdateSubscriptionList(c *gin.Context) {
 
 // UpdateLayout
 func (s *CloudRecordingService) UpdateLayout(c *gin.Context) {
-	var req = c.Request
 	var respWriter = c.Writer
 	var updateReq StartRecordingRequest
-	err := json.NewDecoder(req.Body).Decode(&updateReq)
+	err := json.NewDecoder(c.Request.Body).Decode(&updateReq)
 	if err != nil {
 		// invalid request
 		http.Error(respWriter, err.Error(), http.StatusBadRequest)
