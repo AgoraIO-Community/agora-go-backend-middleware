@@ -4,26 +4,31 @@ import "encoding/json"
 
 // ClientStartRecordingRequest represents the JSON payload structure sent by the client to start a cloud recording.
 type ClientStartRecordingRequest struct {
-	ChannelName        string           `json:"channelName"`
+	ChannelName        string           `json:"channelName"` // The name of the channel to record
 	SceneMode          *string          `json:"sceneMode,omitempty"`
 	RecordingMode      *string          `json:"recordingMode,omitempty"`
 	ExcludeResourceIds *[]string        `json:"excludeResourceIds,omitempty"`
 	RecordingConfig    *RecordingConfig `json:"recordingConfig,omitempty"`
 }
 
-type ClientStopRecordingRequest struct {
-	Cname         string  `json:"cname"` // The channel name for the cloud recording
-	Uid           string  `json:"uid"`   // The UID for the cloud recording session
-	ResourceId    string  `json:"resourceId"`
-	RecordingId   string  `json:"recordingId"`
-	RecordingMode *string `json:"recordingMode,omitempty"`
-	AsyncStop     *bool   `json:"async_stop,omitempty"`
+// ClientUpdateRecordingRequest represents the JSON payload structure sent by the client to update a cloud recording.
+type ClientUpdateRecordingRequest struct {
+	Cname         string              `json:"cname"`      // The name of the channel being recorded
+	Uid           string              `json:"uid"`        // The UID for the existing cloud recording session
+	ResourceId    string              `json:"resourceId"` // The ResourceId for the existing cloud recording session
+	Sid           string              `json:"sid"`        // The Sid for the existing cloud recording session
+	RecordingMode *string             `json:"recordingMode,omitempty"`
+	UpdateConfig  UpdateClientRequest `json:"recordingConfig"`
 }
 
-type ClientUpdateRecordingRequest struct {
-	Cname         string          `json:"cname"`         // The channel name for the cloud recording
-	Uid           string          `json:"uid"`           // The UID for the cloud recording session
-	ClientRequest RecordingConfig `json:"clientRequest"` // The updated recording configuration request for the cloud recording session
+// ClientStopRecordingRequest represents the JSON payload structure sent by the client to stop a cloud recording.
+type ClientStopRecordingRequest struct {
+	Cname         string  `json:"cname"` // The name of the channel being recorded
+	Uid           string  `json:"uid"`   // The UID for an existing cloud recording session
+	ResourceId    string  `json:"resourceId"`
+	Sid           string  `json:"sid"`
+	RecordingMode *string `json:"recordingMode,omitempty"`
+	AsyncStop     *bool   `json:"async_stop,omitempty"`
 }
 
 // AcquireResourceRequest represents the JSON payload structure for acquiring a cloud recording resource.
@@ -53,6 +58,59 @@ type StopClientRequest struct {
 	AsyncStop *bool `json:"async_stop,omitempty"`
 }
 
+type UpdateRecordingRequest struct {
+	Cname         string              `json:"cname"`         // The channel name for the cloud recording
+	Uid           string              `json:"uid"`           // The UID for the cloud recording session
+	ClientRequest UpdateClientRequest `json:"clientRequest"` // The client request to stop the cloud recording
+}
+
+type UpdateClientRequest struct {
+	StreamSubscribe    *StreamSubscribe    `json:"streamSubscribe,omitempty"`
+	WebRecordingConfig *WebRecordingConfig `json:"webRecordingConfig,omitempty"`
+	RTMPPublishConfig  *RTMPPublishConfig  `json:"rtmpPublishConfig,omitempty"`
+}
+
+func (ucr *UpdateClientRequest) IsValid() bool {
+	count := 0
+	if ucr.StreamSubscribe != nil {
+		count++
+	}
+	if ucr.WebRecordingConfig != nil {
+		count++
+	}
+	if ucr.RTMPPublishConfig != nil {
+		count++
+	}
+	return count == 1 // exactly one of the fields should be non-nil
+}
+
+type StreamSubscribe struct {
+	AudioUidList *AudioUidList `json:"audioUidList,omitempty"`
+	VideoUidList *VideoUidList `json:"videoUidList,omitempty"`
+}
+
+type AudioUidList struct {
+	SubscribeAudioUids   *[]string `json:"subscribeAudioUids,omitempty"`
+	UnsubscribeAudioUids *[]string `json:"unsubscribeAudioUids,omitempty"`
+}
+
+type VideoUidList struct {
+	SubscribeVideoUids   *[]string `json:"subscribeVideoUids,omitempty"`
+	UnsubscribeVideoUids *[]string `json:"unsunscribeVideoUids,omitempty"` // Note: Check the key spelling in the original JSON ("unsunscribe" might be a typo and should be "unsubscribe")
+}
+
+type WebRecordingConfig struct {
+	Onhold bool `json:"onhold"`
+}
+
+type RTMPPublishConfig struct {
+	Outputs []Output `json:"outputs"`
+}
+
+type Output struct {
+	RTMPUrl string `json:"rtmpUrl"`
+}
+
 // AquireClientRequest represents the client request configuration for starting a cloud recording.
 type AquireClientRequest struct {
 	Scene               int           `json:"scene,omitempty"`
@@ -61,12 +119,22 @@ type AquireClientRequest struct {
 	ExcludeResourceIds  *[]string     `json:"excludeResourceIds,omitempty"`
 }
 
+// Timestampable is an interface that any struct should implement to be able to receive a timestamp
+type Timestampable interface {
+	SetTimestamp(timestamp string)
+}
+
 // Server Response from Agora after successful Start
 type StartRecordingResponse struct {
-	Cname      string `json:"cname"`
-	Uid        string `json:"uid"`
-	ResourceId string `json:"resourceId"`
-	Sid        string `json:"sid"`
+	Cname      string  `json:"cname"`
+	Uid        string  `json:"uid"`
+	ResourceId string  `json:"resourceId"`
+	Sid        string  `json:"sid"`
+	Timestamp  *string `json:"timestamp,omitempty"`
+}
+
+func (s *StartRecordingResponse) SetTimestamp(timestamp string) {
+	s.Timestamp = &timestamp
 }
 
 // StopRecordingResponse main struct for the recording response
@@ -77,6 +145,22 @@ type StopRecordingResponse struct {
 	Cname          *string        `json:"cname"`
 	Uid            *string        `json:"uid"`
 	Timestamp      *string        `json:"timestamp,omitempty"`
+}
+
+func (s *StopRecordingResponse) SetTimestamp(timestamp string) {
+	s.Timestamp = &timestamp
+}
+
+type UpdateRecordingResponse struct {
+	Cname      *string `json:"cname"`
+	Uid        *string `json:"uid"`
+	ResourceId *string `json:"resourceId"`
+	Sid        string  `json:"sid"`
+	Timestamp  *string `json:"timestamp,omitempty"`
+}
+
+func (s *UpdateRecordingResponse) SetTimestamp(timestamp string) {
+	s.Timestamp = &timestamp
 }
 
 // ServerResponse all responsese
