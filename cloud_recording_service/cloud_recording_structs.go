@@ -11,14 +11,23 @@ type ClientStartRecordingRequest struct {
 	RecordingConfig    *RecordingConfig `json:"recordingConfig,omitempty"`
 }
 
-// ClientUpdateRecordingRequest represents the JSON payload structure sent by the client to update a cloud recording.
-type ClientUpdateRecordingRequest struct {
-	Cname         string              `json:"cname"`      // The name of the channel being recorded
-	Uid           string              `json:"uid"`        // The UID for the existing cloud recording session
-	ResourceId    string              `json:"resourceId"` // The ResourceId for the existing cloud recording session
-	Sid           string              `json:"sid"`        // The Sid for the existing cloud recording session
-	RecordingMode *string             `json:"recordingMode,omitempty"`
-	UpdateConfig  UpdateClientRequest `json:"recordingConfig"`
+// ClientUpdateSubscriptionRequest represents the JSON payload structure sent by the client to update a cloud recording.
+type ClientUpdateSubscriptionRequest struct {
+	Cname         string                          `json:"cname"`      // The name of the channel being recorded
+	Uid           string                          `json:"uid"`        // The UID for the existing cloud recording session
+	ResourceId    string                          `json:"resourceId"` // The ResourceId for the existing cloud recording session
+	Sid           string                          `json:"sid"`        // The Sid for the existing cloud recording session
+	RecordingMode *string                         `json:"recordingMode,omitempty"`
+	UpdateConfig  UpdateSubscriptionClientRequest `json:"recordingConfig"`
+}
+
+type ClientUpdateLayoutRequest struct {
+	Cname         string                    `json:"cname"`      // The name of the channel being recorded
+	Uid           string                    `json:"uid"`        // The UID for the existing cloud recording session
+	ResourceId    string                    `json:"resourceId"` // The ResourceId for the existing cloud recording session
+	Sid           string                    `json:"sid"`        // The Sid for the existing cloud recording session
+	RecordingMode *string                   `json:"recordingMode,omitempty"`
+	UpdateConfig  UpdateLayoutClientRequest `json:"recordingConfig"`
 }
 
 // ClientStopRecordingRequest represents the JSON payload structure sent by the client to stop a cloud recording.
@@ -58,19 +67,19 @@ type StopClientRequest struct {
 	AsyncStop *bool `json:"async_stop,omitempty"`
 }
 
-type UpdateRecordingRequest struct {
-	Cname         string              `json:"cname"`         // The channel name for the cloud recording
-	Uid           string              `json:"uid"`           // The UID for the cloud recording session
-	ClientRequest UpdateClientRequest `json:"clientRequest"` // The client request to stop the cloud recording
+type UpdateSubscriptionRequest struct {
+	Cname         string                          `json:"cname"`         // The channel name for the cloud recording
+	Uid           string                          `json:"uid"`           // The UID for the cloud recording session
+	ClientRequest UpdateSubscriptionClientRequest `json:"clientRequest"` // The client request to stop the cloud recording
 }
 
-type UpdateClientRequest struct {
+type UpdateSubscriptionClientRequest struct {
 	StreamSubscribe    *StreamSubscribe    `json:"streamSubscribe,omitempty"`
 	WebRecordingConfig *WebRecordingConfig `json:"webRecordingConfig,omitempty"`
 	RTMPPublishConfig  *RTMPPublishConfig  `json:"rtmpPublishConfig,omitempty"`
 }
 
-func (ucr *UpdateClientRequest) IsValid() bool {
+func (ucr *UpdateSubscriptionClientRequest) IsValid() bool {
 	count := 0
 	if ucr.StreamSubscribe != nil {
 		count++
@@ -96,7 +105,7 @@ type AudioUidList struct {
 
 type VideoUidList struct {
 	SubscribeVideoUids   *[]string `json:"subscribeVideoUids,omitempty"`
-	UnsubscribeVideoUids *[]string `json:"unsunscribeVideoUids,omitempty"` // Note: Check the key spelling in the original JSON ("unsunscribe" might be a typo and should be "unsubscribe")
+	UnsubscribeVideoUids *[]string `json:"unsunscribeVideoUids,omitempty"`
 }
 
 type WebRecordingConfig struct {
@@ -109,6 +118,22 @@ type RTMPPublishConfig struct {
 
 type Output struct {
 	RTMPUrl string `json:"rtmpUrl"`
+}
+
+type UpdateLayoutRequest struct {
+	Cname         string                    `json:"cname"`         // The channel name for the cloud recording
+	Uid           string                    `json:"uid"`           // The UID for the cloud recording session
+	ClientRequest UpdateLayoutClientRequest `json:"clientRequest"` // The client request to stop the cloud recording
+}
+
+type UpdateLayoutClientRequest struct {
+	MaxResolutionUid           *string             `json:"maxResolutionUid,omitempty"`
+	MixedVideoLayout           *int                `json:"mixedVideoLayout,omitempty"`
+	BackgroundColor            *string             `json:"backgroundColor,omitempty"`
+	BackgroundImage            *string             `json:"backgroundImage,omitempty"`
+	DefaultUserBackgroundImage *string             `json:"defaultUserBackgroundImage,omitempty"`
+	LayoutConfig               *[]LayoutConfig     `json:"layoutConfig,omitempty"`
+	BackgroundConfig           *[]BackgroundConfig `json:"backgroundConfig,omitempty"`
 }
 
 // AquireClientRequest represents the client request configuration for starting a cloud recording.
