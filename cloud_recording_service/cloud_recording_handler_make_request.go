@@ -14,33 +14,44 @@ import (
 // Parameters:
 //   - method: string - The HTTP method to use for the request (e.g., "GET", "POST").
 //   - url: string - The URL to send the request to.
-//   - auth: string - The base64-encoded authorization header value.
-//   - body: []byte - The request body to send (can be nil for GET requests).
+//   - body: optional interface{} - The request body to send (should be provided for methods like POST, PUT).
 //
 // Returns:
 //   - []byte: The response body from the server.
 //   - error: An error if there are any issues during the request.
 //
 // Behavior:
-//   - Creates a new HTTP request with the specified method, URL, and body.
+//   - Creates a new HTTP request with the specified method, URL, and body (as needed).
 //   - Sets the Authorization and Content-Type headers.
 //   - Sends the request using an HTTP client.
 //   - Reads and returns the response body, or an error if the request fails.
 func (s *CloudRecordingService) makeRequest(method, url string, body interface{}) ([]byte, error) {
-	// Marshal the request body into JSON
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling request body: %v", err)
+	var req *http.Request
+	var err error
+
+	if method == "GET" {
+		// Create request without body for GET
+		req, err = http.NewRequest(method, url, nil)
+	} else if body != nil {
+		// Marshal the request body into JSON
+		jsonBody, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling request body: %v", err)
+		}
+
+		// Create the HTTP request with a body for other methods
+		req, err = http.NewRequest(method, url, bytes.NewBuffer(jsonBody))
+		if err != nil {
+			return nil, fmt.Errorf("error creating request: %v", err)
+		}
+
+		// Set the Content-Type header for requests with a body
+		req.Header.Set("Content-Type", "application/json")
+	} else {
+		return nil, fmt.Errorf("error creating request for method: %s - request body missing", method)
 	}
 
-	// Create the HTTP request
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
-	}
-
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
+	// Set the Authorization header
 	req.Header.Set("Authorization", s.basicAuth)
 
 	// Send the request with a 10-second timeout
