@@ -1,8 +1,11 @@
 package cloud_recording_service
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/rand"
 	"strconv"
+	"time"
 )
 
 // generateUID is a helper function to generate unique user id.
@@ -23,4 +26,17 @@ func Contains(list []string, item string) bool {
 		}
 	}
 	return false
+}
+
+func (s *CloudRecordingService) AddTimestamp(response Timestampable) (json.RawMessage, error) {
+	// Set the current timestamp
+	now := time.Now().UTC().Format(time.RFC3339)
+	response.SetTimestamp(now)
+
+	// Marshal the response back to JSON
+	timestampedBody, err := json.Marshal(response)
+	if err != nil {
+		return []byte{}, fmt.Errorf("error marshaling final response: %v", err)
+	}
+	return timestampedBody, nil
 }

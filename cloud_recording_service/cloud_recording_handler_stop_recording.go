@@ -3,7 +3,6 @@ package cloud_recording_service
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 )
 
 // HandleStopRecording processes the request to stop a cloud recording session in Agora's cloud recording service.
@@ -46,7 +45,7 @@ func (s *CloudRecordingService) HandleStopRecording(stopReq StopRecordingRequest
 	}
 
 	// Add timestamp to Agora response
-	timestampBody, err := s.AddTimestamp(response)
+	timestampBody, err := s.AddTimestamp(&response)
 	if err != nil {
 		return nil, fmt.Errorf("error encoding timestamped response: %v", err)
 	}
@@ -85,17 +84,4 @@ func (sr *ServerResponse) UnmarshalFileList() (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("unknown FileListMode: %s", *sr.FileListMode)
 	}
-}
-
-func (s *CloudRecordingService) AddTimestamp(response StopRecordingResponse) (json.RawMessage, error) {
-	// Set the current timestamp
-	now := time.Now().UTC().Format(time.RFC3339)
-	response.Timestamp = &now
-
-	// Marshal the response back to JSON
-	timestampedBody, err := json.Marshal(response)
-	if err != nil {
-		return []byte{}, fmt.Errorf("error marshaling final response: %v", err)
-	}
-	return timestampedBody, nil
 }
