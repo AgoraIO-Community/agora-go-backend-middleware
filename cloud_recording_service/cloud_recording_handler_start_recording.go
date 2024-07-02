@@ -16,7 +16,7 @@ import (
 // Returns:
 //   - string: The recording ID (sid) acquired from the Agora cloud recording API.
 //   - error: An error object if any issues occurred during the request process.
-func (s *CloudRecordingService) HandleStartRecordingReq(startReq StartRecordingRequest, resourceId string, modeType string) (string, error) {
+func (s *CloudRecordingService) HandleStartRecordingReq(startReq StartRecordingRequest, resourceId string, modeType string) (json.RawMessage, error) {
 
 	// build start recording endpoint
 	url := fmt.Sprintf("%s/%s/cloud_recording/resourceid/%s/mode/%s/start", s.baseURL, s.appID, resourceId, modeType)
@@ -24,15 +24,21 @@ func (s *CloudRecordingService) HandleStartRecordingReq(startReq StartRecordingR
 	// send request to start endpoint
 	body, err := s.makeRequest("POST", url, startReq)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// Parse the response body to extract the necessary information
+	// Parse the response body to validate the response
 	var response StartRecordingResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return "", fmt.Errorf("error parsing response: %v", err)
+		return nil, fmt.Errorf("error parsing response: %v", err)
 	}
 
-	return response.Sid, nil
+	// Add timestamp to Agora response
+	timestampBody, err := s.AddTimestamp(&response)
+	if err != nil {
+		return nil, fmt.Errorf("error encoding timestamped response: %v", err)
+	}
+
+	return timestampBody, nil
 }

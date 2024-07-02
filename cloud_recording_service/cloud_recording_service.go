@@ -188,27 +188,15 @@ func (s *CloudRecordingService) StartRecording(c *gin.Context) {
 		},
 	}
 
-	// configJSON, err := json.MarshalIndent(startReq, "", "  ")
-	// if err != nil {
-	// 	log.Fatalf("Error marshalling default config: %v", err)
-	// }
-	// log.Println("startReq:")
-	// log.Println(string(configJSON))
-
 	// Start Recording
-	recordingID, err := s.HandleStartRecordingReq(startReq, resourceID, recordingMode)
+	response, err := s.HandleStartRecordingReq(startReq, resourceID, recordingMode)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start recording: " + err.Error()})
 		return
 	}
 
-	// Return Resource ID and Recording ID
-	c.JSON(http.StatusOK, gin.H{
-		"UID":         uid,
-		"resourceId":  resourceID,
-		"recordingId": recordingID,
-		"timestamp":   time.Now().UTC(),
-	})
+	// Return the wrapped Agora response
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 // StopRecording
