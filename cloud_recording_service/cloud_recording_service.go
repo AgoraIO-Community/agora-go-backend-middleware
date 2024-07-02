@@ -129,7 +129,7 @@ func (s *CloudRecordingService) StartRecording(c *gin.Context) {
 
 	// Check if RecordingConfig is nil, if so, create a default one
 	if clientStartReq.RecordingConfig == nil {
-		// recording config defaults
+		// create default recording config
 		channelType := 0
 		streamTypes := 2
 		videoStreamType := 0
@@ -241,7 +241,7 @@ func (s *CloudRecordingService) GetStatus(c *gin.Context) {
 // UpdateSubscriptionList
 func (s *CloudRecordingService) UpdateSubscriptionList(c *gin.Context) {
 	var respWriter = c.Writer
-	var clientUpdateReq ClientUpdateRecordingRequest
+	var clientUpdateReq ClientUpdateSubscriptionRequest
 	err := json.NewDecoder(c.Request.Body).Decode(&clientUpdateReq)
 	if err != nil {
 		// invalid request
@@ -254,7 +254,7 @@ func (s *CloudRecordingService) UpdateSubscriptionList(c *gin.Context) {
 		return
 	}
 	// build the stop request from user request
-	updateReq := UpdateRecordingRequest{
+	updateReq := UpdateSubscriptionRequest{
 		Cname:         clientUpdateReq.Cname,
 		Uid:           clientUpdateReq.Uid,
 		ClientRequest: clientUpdateReq.UpdateConfig,
@@ -279,12 +279,33 @@ func (s *CloudRecordingService) UpdateSubscriptionList(c *gin.Context) {
 // UpdateLayout
 func (s *CloudRecordingService) UpdateLayout(c *gin.Context) {
 	var respWriter = c.Writer
-	var updateReq StartRecordingRequest
-	err := json.NewDecoder(c.Request.Body).Decode(&updateReq)
+	var clientUpdateReq ClientUpdateLayoutRequest
+	err := json.NewDecoder(c.Request.Body).Decode(&clientUpdateReq)
 	if err != nil {
 		// invalid request
 		http.Error(respWriter, err.Error(), http.StatusBadRequest)
 		return
 	}
-	s.HandleUpdateLayout(updateReq, respWriter)
+
+	// build the stop request from user request
+	updateReq := UpdateLayoutRequest{
+		Cname:         clientUpdateReq.Cname,
+		Uid:           clientUpdateReq.Uid,
+		ClientRequest: clientUpdateReq.UpdateConfig,
+	}
+
+	recordingMode := "mix"
+	if clientUpdateReq.RecordingMode != nil {
+		recordingMode = *clientUpdateReq.RecordingMode
+	}
+
+	// Send Stop Recording Request to Agora
+	response, err := s.HandleUpdateLayout(updateReq, clientUpdateReq.ResourceId, clientUpdateReq.Sid, recordingMode)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return the wrapped Agora response
+	c.Data(http.StatusOK, "application/json", response)
 }

@@ -1,6 +1,9 @@
 package cloud_recording_service
 
-import "net/http"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // UpdateLayout handles the update video layout request.
 // It validates the request, constructs the URL, and sends the request to the Agora cloud recording API.
@@ -16,6 +19,28 @@ import "net/http"
 //
 // Notes:
 //   - This function assumes the presence of s.baseURL, s.appID, s.customerID, and s.customerCertificate for constructing the API request.
-func (s *CloudRecordingService) HandleUpdateLayout(updateReq StartRecordingRequest, w http.ResponseWriter){
+func (s *CloudRecordingService) HandleUpdateLayout(updateReq UpdateLayoutRequest, resourceId string, recordingId string, modeType string) (json.RawMessage, error) {
+	// build update recording endpoint
+	url := fmt.Sprintf("%s/%s/cloud_recording/resourceid/%s/sid/%s/mode/%s/updateLayout", s.baseURL, s.appID, resourceId, recordingId, modeType)
 
+	// send request to update recording endpoint
+	body, err := s.makeRequest("POST", url, updateReq)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	// Parse the response body to ensure it conforms to the expected structure
+	var response UpdateRecordingResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return []byte{}, fmt.Errorf("error parsing response body into UpdateRecordingResponse: %v", err)
+	}
+
+	// Add timestamp to Agora response
+	timestampBody, err := s.AddTimestamp(&response)
+	if err != nil {
+		return nil, fmt.Errorf("error encoding timestamped response: %v", err)
+	}
+
+	return timestampBody, nil
 }
