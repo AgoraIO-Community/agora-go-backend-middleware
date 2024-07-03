@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/AgoraIO-Community/agora-backend-service/middleware"
+	"github.com/AgoraIO-Community/agora-go-backend-middleware/middleware"
 	"github.com/gin-gonic/gin"
 )
 
