@@ -5,41 +5,49 @@ import (
 	"fmt"
 )
 
-// UpdateLayout handles the update video layout request.
-// It validates the request, constructs the URL, and sends the request to the Agora cloud recording API.
+// HandleUpdateLayout processes the request to update the video layout during an ongoing cloud recording session.
+// It constructs the request URL, validates the request data, and sends the update request to the Agora cloud recording API.
 //
 // Parameters:
-//   - c: *gin.Context - The Gin context representing the HTTP request and response.
+//   - updateReq: UpdateLayoutRequest - The request payload containing the new layout settings.
+//   - resourceId: string - The unique identifier for the resource (channel) that is being recorded.
+//   - recordingId: string - The unique identifier for the ongoing recording session.
+//   - modeType: string - Specifies the type of recording session, such as "individual" or "mixed".
+//
+// Returns:
+//   - json.RawMessage: The raw JSON response from the cloud recording service, which includes details of the update operation.
+//   - error: Error object detailing any issues encountered during the API call.
 //
 // Behavior:
-//   - Parses the request body into a StartRecordingRequest struct.
-//   - Validates the request fields.
-//   - Constructs the URL and authentication header for the API request.
-//   - Sends the request to the Agora cloud recording API and returns the response.
+//   - Constructs the URL for the update layout endpoint using the provided identifiers.
+//   - Sends a POST request with the updated layout settings to the Agora cloud recording API.
+//   - Parses the JSON response to validate its structure and confirm the successful application of the layout update.
+//   - Appends a timestamp to the response for auditing purposes before returning the final response.
 //
 // Notes:
-//   - This function assumes the presence of s.baseURL, s.appID, s.customerID, and s.customerCertificate for constructing the API request.
+//   - Assumes the presence of s.baseURL, s.appID, s.customerID, and s.customerCertificate to construct the API request.
+//   - The function uses s.makeRequest to handle the HTTP request and response handling efficiently.
 func (s *CloudRecordingService) HandleUpdateLayout(updateReq UpdateLayoutRequest, resourceId string, recordingId string, modeType string) (json.RawMessage, error) {
-	// build update recording endpoint
+	// Build the URL for the update layout endpoint.
 	url := fmt.Sprintf("%s/%s/cloud_recording/resourceid/%s/sid/%s/mode/%s/updateLayout", s.baseURL, s.appID, resourceId, recordingId, modeType)
 
-	// send request to update recording endpoint
+	// Send a POST request to the update layout endpoint with the new settings.
 	body, err := s.makeRequest("POST", url, updateReq)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
-	// Parse the response body to ensure it conforms to the expected structure
+	// Parse the response body to ensure it conforms to the expected structure.
 	var response UpdateRecordingResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return []byte{}, fmt.Errorf("error parsing response body into UpdateRecordingResponse: %v", err)
+		return nil, fmt.Errorf("error parsing response body into UpdateRecordingResponse: %v", err)
 	}
 
-	// Add timestamp to Agora response
+	// Append a timestamp to the Agora response for auditing and record-keeping.
 	timestampBody, err := s.AddTimestamp(&response)
 	if err != nil {
-		return nil, fmt.Errorf("error encoding timestamped response: %v", err)
+		return nil, fmt.Errorf("error appending timestamp to response: %v", err)
 	}
 
 	return timestampBody, nil

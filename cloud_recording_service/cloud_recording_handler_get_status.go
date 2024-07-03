@@ -5,46 +5,50 @@ import (
 	"fmt"
 )
 
-// GetStatus handles the get status request.
-// It constructs the URL and sends the request to the Agora cloud recording API.
+// HandleGetStatus constructs the URL and sends a GET request to the Agora cloud recording API
+// to retrieve the status of a specific cloud recording session.
 //
 // Parameters:
-//   - c: *gin.Context - The Gin context representing the HTTP request and response.
+//   - resourceId: string - Unique identifier for the resource in Agora Cloud Recording.
+//   - recordingId: string - Session ID associated with the recording.
+//   - modeType: string - Recording mode (e.g., individual, mix).
 //
-// Behavior:
-//   - Retrieves the resource ID, SID, and mode from the URL parameters.
-//   - Constructs the URL and authentication header for the API request.
-//   - Sends the request to the Agora cloud recording API and returns the response.
+// Returns:
+//   - json.RawMessage: JSON formatted response from the Agora cloud recording API.
+//   - error: Error object if an issue occurs during the API call.
 //
 // Notes:
-//   - This function assumes the presence of s.baseURL, s.appID, s.customerID, and s.customerCertificate for constructing the API request.
+//   - Assumes availability of s.baseURL, s.appID, s.customerID, and s.customerCertificate
+//     for constructing the API request.
+//   - Uses s.makeRequest to send the HTTP request and handles the response.
 func (s *CloudRecordingService) HandleGetStatus(resourceId string, recordingId string, modeType string) (json.RawMessage, error) {
-	// build update recording endpoint
+
+	// Construct the URL for the GET request to the cloud recording status endpoint.
 	url := fmt.Sprintf("%s/%s/cloud_recording/resourceid/%s/sid/%s/mode/%s/query", s.baseURL, s.appID, resourceId, recordingId, modeType)
 
-	// send request to update recording endpoint
+	// Send the GET request to the Agora cloud recording API.
 	body, err := s.makeRequest("GET", url, nil)
 	if err != nil {
 		return []byte{}, err
 	}
 
-	// Parse the response body to ensure it conforms to the expected structure
+	// Parse the response body to verify it conforms to the expected structure.
 	var response ActiveRecordingResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return []byte{}, fmt.Errorf("error parsing response body into StopRecordingResponse: %v", err)
+		return []byte{}, fmt.Errorf("error parsing response body into ActiveRecordingResponse: %v", err)
 	}
 
-	// Validate the FileList conforms to the expected structure based on FileListMode.
+	// Validate the structure of the FileList based on the specified FileListMode.
 	_, err = response.ServerResponse.UnmarshalFileList()
 	if err != nil {
 		return nil, fmt.Errorf("error parsing ServerResponse: %v", err)
 	}
 
-	// Add timestamp to Agora response
+	// Append a timestamp to the response for auditing purposes.
 	timestampBody, err := s.AddTimestamp(&response)
 	if err != nil {
-		return nil, fmt.Errorf("error encoding timestamped response: %v", err)
+		return nil, fmt.Errorf("error appending timestamp to response: %v", err)
 	}
 
 	return timestampBody, nil

@@ -23,7 +23,7 @@ type CloudRecordingService struct {
 }
 
 // NewCloudRecordingService returns a CloudRecordingService pointer with all configurations set.
-// It loads environment variables, validates their presence, and initializes the CloudRecordingService struct.
+// This function initializes a new CloudRecordingService with specified configurations. It ensures all provided parameters are valid and logs a fatal error if any required configurations are missing.
 //
 // Parameters:
 //   - tokenService: *token_service.TokenService - The token service for generating tokens.
@@ -43,11 +43,11 @@ func NewCloudRecordingService(appID string, baseURL string, basicAuth string, to
 
 	// Return a new instance of the service
 	return &CloudRecordingService{
-		appID:         appID,
-		baseURL:       baseURL,
-		basicAuth:     basicAuth,
-		tokenService:  tokenService,
-		storageConfig: storageConfig,
+		appID:         appID,         // The Agora app ID used to identify the application within Agora services.
+		baseURL:       baseURL,       // The base URL for the Agora cloud recording API where all API requests are sent.
+		basicAuth:     basicAuth,     // Basic authentication credentials required for interacting with the Agora API.
+		tokenService:  tokenService,  // Pointer to an instance of TokenService used to generate authentication tokens for Agora API requests.
+		storageConfig: storageConfig, // Configuration for storage options including directory structure and file naming.
 	}
 }
 
@@ -78,7 +78,7 @@ func (s *CloudRecordingService) RegisterRoutes(r *gin.Engine) {
 }
 
 func (s *CloudRecordingService) StartRecording(c *gin.Context) {
-
+	// Verify the client's request. If binding fails, returns an HTTP 400 error with the specific binding error message.
 	var clientStartReq ClientStartRecordingRequest
 	if err := c.ShouldBindJSON(&clientStartReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

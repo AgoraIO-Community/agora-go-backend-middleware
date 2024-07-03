@@ -8,17 +8,19 @@ import (
 	"time"
 )
 
-// generateUID is a helper function to generate unique user id.
+// generateUID generates a unique user identifier for use within cloud recording sessions.
+// This function ensures the UID is never zero, which is reserved, by generating a random
+// number between 1 and the maximum possible 32-bit integer value.
 func generateUID() string {
-	// Generate a random number between 1 and 2^32 - 1 (4294967295)
-	// - starts from 1 to avoid 0, which is reserved.
+	// Generate a random number starting from 1 to avoid 0, which is reserved.
 	uid := rand.Intn(4294967294) + 1
 
-	// Convert the integer to a string
+	// Convert the integer UID to a string format and return it.
 	return strconv.Itoa(uid)
 }
 
-// Contains checks if a string is present in a slice.
+// Contains checks if a specific string is present within a slice of strings.
+// This is useful for determining if a particular item exists within a list.
 func Contains(list []string, item string) bool {
 	for _, a := range list {
 		if a == item {
@@ -28,48 +30,45 @@ func Contains(list []string, item string) bool {
 	return false
 }
 
+// AddTimestamp adds a current timestamp to any response object that supports the Timestampable interface.
+// It then marshals the updated object back into JSON format for further use or storage.
 func (s *CloudRecordingService) AddTimestamp(response Timestampable) (json.RawMessage, error) {
-	// Set the current timestamp
+	// Set the current timestamp in UTC and RFC3339 format.
 	now := time.Now().UTC().Format(time.RFC3339)
 	response.SetTimestamp(now)
 
-	// Marshal the response back to JSON
+	// Marshal the response with the added timestamp back to JSON.
 	timestampedBody, err := json.Marshal(response)
 	if err != nil {
-		return []byte{}, fmt.Errorf("error marshaling final response: %v", err)
+		return nil, fmt.Errorf("error marshaling final response with timestamp: %v", err)
 	}
 	return timestampedBody, nil
 }
 
-// UnmarshalFileList interprets the file list from the server response based on the specified FileListMode.
-// It supports different data representations as per the mode set in the response (e.g., string or JSON).
-//
-// Returns:
-//   - An interface holding the parsed file list which can be a slice of FileDetail or FileListEntry.
-//   - An error if parsing fails or the mode is not supported.
-//
-// Notes:
-//   - This function assumes that FileListMode and FileList are not nil before proceeding with parsing.
-
+// UnmarshalFileList interprets the file list from the server response, handling different formats based on the FileListMode.
+// It supports 'string' and 'json' modes, returning the file list as either a slice of FileDetail or FileListEntry respectively.
 func (sr *ServerResponse) UnmarshalFileList() (interface{}, error) {
 	if sr.FileListMode == nil || sr.FileList == nil {
-		// No FileListMode set or FileList is nil
-		return nil, fmt.Errorf("FileListMode or FileList are empty")
+		// Ensure FileListMode and FileList are not nil before proceeding.
+		return nil, fmt.Errorf("FileListMode or FileList are empty, cannot proceed with unmarshaling")
 	}
 	switch *sr.FileListMode {
 	case "string":
+		// Parse the file list as a slice of FileDetail structures.
 		var fileList []FileDetail
 		if err := json.Unmarshal(*sr.FileList, &fileList); err != nil {
 			return nil, fmt.Errorf("error parsing FileList into []FileDetail: %v", err)
 		}
 		return fileList, nil
 	case "json":
+		// Parse the file list as a slice of FileListEntry structures.
 		var fileList []FileListEntry
 		if err := json.Unmarshal(*sr.FileList, &fileList); err != nil {
 			return nil, fmt.Errorf("error parsing FileList into []FileListEntry: %v", err)
 		}
 		return fileList, nil
 	default:
+		// Handle unknown FileListMode by returning an error.
 		return nil, fmt.Errorf("unknown FileListMode: %s", *sr.FileListMode)
 	}
 }

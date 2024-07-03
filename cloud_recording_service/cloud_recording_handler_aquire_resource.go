@@ -5,34 +5,36 @@ import (
 	"fmt"
 )
 
-// HandleAcquireResourceReq handles the acquire resource request.
-// It constructs the URL, marshals the request, sends it to the Agora cloud recording API, and processes the response.
+// HandleAcquireResourceReq constructs a URL, marshals the request payload, sends it to the Agora cloud recording API,
+// and processes the response to acquire a resource for cloud recording.
 //
 // Parameters:
-//   - acquireReq: AcquireResourceRequest - The request payload for acquiring a resource.
+//   - acquireReq: AcquireResourceRequest - The structured data containing the details necessary for acquiring a resource.
 //
 // Returns:
-//   - string: The resource ID acquired from the Agora cloud recording API.
-//   - error: An error object if any issues occurred during the request process.
+//   - string: A unique identifier (resource ID) for the acquired resource from the Agora cloud recording API.
+//   - error: Error object detailing any issues encountered during the API call.
 //
 // Behavior:
-//   - Marshals the acquireReq struct into JSON.
-//   - Constructs the URL for the Agora cloud recording API request.
-//   - Sends the Acquire request to the Agora cloud recording API using makeRequest.
-//   - Reads and processes the response body to extract the resource ID if the request is successful.
+//   - Converts the acquireReq object into JSON format for the API request.
+//   - Constructs the URL for sending the acquisition request to the Agora cloud recording API.
+//   - Utilizes makeRequest to perform the POST operation with the constructed URL and marshaled data.
+//   - Interprets the API's JSON response to extract the resource ID if the operation succeeds.
 //
 // Notes:
-//   - This function assumes the presence of s.baseURL, s.appID, s.customerID, and s.customerCertificate for constructing the API request.
+//   - Assumes the availability of s.baseURL, s.appID, s.customerID, and s.customerCertificate for constructing
+//     the API request.
 func (s *CloudRecordingService) HandleAcquireResourceReq(acquireReq AcquireResourceRequest) (string, error) {
-	// Construct the URL
+	// Construct the URL for the POST request to acquire a cloud recording resource.
 	url := fmt.Sprintf("%s/%s/cloud_recording/acquire", s.baseURL, s.appID)
 
+	// Send the POST request to the Agora cloud recording API.
 	body, err := s.makeRequest("POST", url, acquireReq)
 	if err != nil {
 		return "", err
 	}
 
-	// Parse the response body to extract the resource ID
+	// Parse the response body to extract the resource ID.
 	var response struct {
 		ResourceId string `json:"resourceId"`
 	}
