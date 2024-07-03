@@ -235,7 +235,7 @@ func (s *CloudRecordingService) StopRecording(c *gin.Context) {
 
 // GetStatus
 func (s *CloudRecordingService) GetStatus(c *gin.Context) {
-	s.HandleGetStatus(c.Writer, c.Request)
+	// s.HandleGetStatus(c.Writer, c.Request)
 }
 
 // UpdateSubscriptionList
