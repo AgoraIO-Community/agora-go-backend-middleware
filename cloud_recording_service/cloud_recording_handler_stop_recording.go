@@ -32,7 +32,7 @@ func (s *CloudRecordingService) HandleStopRecording(stopReq StopRecordingRequest
 	}
 
 	// Parse the response body to ensure it conforms to the expected structure
-	var response StopRecordingResponse
+	var response ActiveRecordingResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return []byte{}, fmt.Errorf("error parsing response body into StopRecordingResponse: %v", err)
@@ -51,37 +51,4 @@ func (s *CloudRecordingService) HandleStopRecording(stopReq StopRecordingRequest
 	}
 
 	return timestampBody, nil
-}
-
-// UnmarshalFileList interprets the file list from the server response based on the specified FileListMode.
-// It supports different data representations as per the mode set in the response (e.g., string or JSON).
-//
-// Returns:
-//   - An interface holding the parsed file list which can be a slice of FileDetail or FileListEntry.
-//   - An error if parsing fails or the mode is not supported.
-//
-// Notes:
-//   - This function assumes that FileListMode and FileList are not nil before proceeding with parsing.
-
-func (sr *ServerResponse) UnmarshalFileList() (interface{}, error) {
-	if sr.FileListMode == nil || sr.FileList == nil {
-		// No FileListMode set or FileList is nil
-		return nil, fmt.Errorf("FileListMode or FileList are empty")
-	}
-	switch *sr.FileListMode {
-	case "string":
-		var fileList []FileDetail
-		if err := json.Unmarshal(*sr.FileList, &fileList); err != nil {
-			return nil, fmt.Errorf("error parsing FileList into []FileDetail: %v", err)
-		}
-		return fileList, nil
-	case "json":
-		var fileList []FileListEntry
-		if err := json.Unmarshal(*sr.FileList, &fileList); err != nil {
-			return nil, fmt.Errorf("error parsing FileList into []FileListEntry: %v", err)
-		}
-		return fileList, nil
-	default:
-		return nil, fmt.Errorf("unknown FileListMode: %s", *sr.FileListMode)
-	}
 }
