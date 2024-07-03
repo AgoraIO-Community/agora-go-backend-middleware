@@ -1,4 +1,4 @@
-# Agora Go Backend Middleware
+# Agora Go Backend Middleware &nbsp;&nbsp;![go test workflow](https://github.com/digitallysavvy/agora-go-backend-middleware/actions/workflows/go.yml/badge.svg)
 
 The Agora Go Backend Middleware is a microservice that exposes a RESTful API designed to simplify interactions with [Agora.io](https://www.agora.io). Written in Golang and powered by the [Gin framework](https://github.com/gin-gonic/gin), this project serves as a middleware to bridge front-end applications using Agora's Real-Time Voice or Video SDKs with Agora's RESTful APIs.
 
