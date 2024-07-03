@@ -18,11 +18,11 @@ import (
 // The generated token is sent as a JSON response to the client.
 //
 // Parameters:
+//   - tokenReq: TokenRequest - The request object containing token type and other necessary fields.
 //   - w: http.ResponseWriter - The HTTP response writer to send the response to the client.
-//   - r: *http.Request - The HTTP request received from the client.
 //
 // Behavior:
-//  1. Retrieves the tokenType from the query parameters. Error if invalid entry or not provided.
+//  1. Retrieves the tokenType from the request. Error if invalid entry or not provided.
 //  2. Uses a switch statement to handle different tokenType cases:
 //     - "rtc": Calls the GenRtcToken method to generate the RTC token and sends it as a JSON response.
 //     - "rtm": Calls the GenRtmToken method to generate the RTM token and sends it as a JSON response.
@@ -35,9 +35,8 @@ import (
 //
 // Example usage:
 //
-//	router.POST("/getNew", TokenService.GetToken)
+//	router.POST("/getNew", TokenService.HandleGetToken)
 func (s *TokenService) HandleGetToken(tokenReq TokenRequest, w http.ResponseWriter) {
-
 	var token string
 	var tokenErr error
 
@@ -222,7 +221,6 @@ func (s *TokenService) GenChatToken(tokenRequest TokenRequest) (string, error) {
 			tokenRequest.Uid,
 			uint32(tokenRequest.ExpirationSeconds),
 		)
-
 	}
 
 	return chatToken, tokenErr
