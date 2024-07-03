@@ -7,10 +7,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func TestMain(m *testing.M) {
@@ -25,6 +28,65 @@ func TestPing(t *testing.T) {
 
 	assertStatusCode(t, w, http.StatusOK)
 	assertJSONResponse(t, w, map[string]string{"message": "pong"})
+}
+
+func TestEnvironmentVariablesLoading(t *testing.T) {
+	// Skip loading .env file in CI environment
+	if os.Getenv("CI") != "true" {
+		err := godotenv.Load()
+		if err != nil {
+			t.Logf("Error loading .env file: %v", err)
+		} else {
+			t.Log("Successfully loaded .env file")
+		}
+	}
+	requiredEnvVars := []string{
+		"APP_ID",
+		"APP_CERTIFICATE",
+		"CUSTOMER_ID",
+		"CUSTOMER_SECRET",
+		"AGORA_BASE_URL",
+		"AGORA_CLOUD_RECORDING_URL",
+		"STORAGE_VENDOR",
+		"STORAGE_REGION",
+		"STORAGE_BUCKET",
+		"STORAGE_BUCKET_ACCESS_KEY",
+		"STORAGE_BUCKET_SECRET_KEY",
+	}
+
+	for _, envVar := range requiredEnvVars {
+		value, exists := os.LookupEnv(envVar)
+		if !exists {
+			t.Errorf("Required environment variable %s is not set", envVar)
+		} else if value == "" {
+			t.Errorf("Required environment variable %s is empty", envVar)
+		}
+	}
+
+	// Test specific format for certain variables
+	if appID := os.Getenv("APP_ID"); len(appID) != 32 {
+		t.Errorf("APP_ID should be 32 characters long, got %d", len(appID))
+	}
+
+	if appCert := os.Getenv("APP_CERTIFICATE"); len(appCert) != 32 {
+		t.Errorf("APP_CERTIFICATE should be 32 characters long, got %d", len(appCert))
+	}
+
+	// Test numeric values
+	numericVars := map[string]string{
+		"STORAGE_VENDOR": os.Getenv("STORAGE_VENDOR"),
+		"STORAGE_REGION": os.Getenv("STORAGE_REGION"),
+	}
+	for varName, value := range numericVars {
+		if _, err := strconv.Atoi(value); err != nil {
+			t.Errorf("%s should be a numeric value, got %s", varName, value)
+		}
+	}
+
+	// Test URL format
+	if baseURL := os.Getenv("AGORA_BASE_URL"); !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		t.Errorf("AGORA_BASE_URL should start with http:// or https://, got %s", baseURL)
+	}
 }
 
 func TestGetBasicAuth(t *testing.T) {
