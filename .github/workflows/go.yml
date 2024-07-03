@@ -1,0 +1,48 @@
+name: Go Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ^1.20
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
+          if [ -f Gopkg.toml ]; then
+              curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+              dep ensure
+          fi
+
+      - name: Run tests
+        env:
+          CI: 'true'
+          APP_ID: '2c7af8f0a39d4f89b5d5eb1a795c98c7'
+          APP_CERTIFICATE: '8af3d123456789abcdef0123456789ab'
+          CUSTOMER_ID: 'customer123456'
+          CUSTOMER_SECRET: '9876543210abcdefghijklmnopqrstuv'
+          CORS_ALLOW_ORIGIN: '*'
+          AGORA_BASE_URL: 'https://api.agora.io'
+          AGORA_CLOUD_RECORDING_URL: '/v1/apps/{appId}/cloud_recording'
+          STORAGE_VENDOR: '1'
+          STORAGE_REGION: '0'
+          STORAGE_BUCKET: 'my-test-bucket-123'
+          STORAGE_BUCKET_ACCESS_KEY: 'AKIAIOSFODNN7EXAMPLE'
+          STORAGE_BUCKET_SECRET_KEY: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+          SERVER_PORT: '8080'
+        run: go test -v -cover ./...
