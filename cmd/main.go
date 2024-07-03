@@ -20,12 +20,13 @@ import (
 )
 
 func main() {
-	// Load environment variables from .env file
+	// Load environment variables from a .env file, logging an error if the file cannot be loaded.
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("Error loading .env file")
 	}
 
+	// Retrieve essential configuration values from environment variables.
 	appIDEnv, appIDExists := os.LookupEnv("APP_ID")
 	appCertEnv, appCertExists := os.LookupEnv("APP_CERTIFICATE")
 	customerIDEnv, customerIDExists := os.LookupEnv("CUSTOMER_ID")
@@ -39,72 +40,73 @@ func main() {
 	storageAccessKeyEnv, accessKeyExists := os.LookupEnv("STORAGE_BUCKET_ACCESS_KEY")
 	storageSecretKeyEnv, secretKeyExists := os.LookupEnv("STORAGE_BUCKET_SECRET_KEY")
 
+	// Check for the presence of all required environment variables and exit if any are missing.
 	if !appIDExists || !appCertExists || !customerIDExists || !customerSecretExists || !baseURLExists || !cloudRecordingURLExists ||
 		!secretKeyExists || !vendorExists || !regionExists || !bucketExists || !accessKeyExists {
 		log.Fatal("FATAL ERROR: ENV not properly configured, check .env file for all required variables")
 	}
 
-	storageVenderInt, storageVenderErr := strconv.Atoi(storageVendorEnv)
+	// Convert storage vendor and region environment variables to integers.
+	storageVendorInt, storageVendorErr := strconv.Atoi(storageVendorEnv)
 	storageRegionInt, storageRegionErr := strconv.Atoi(storageRegionEnv)
 
-	if storageVenderErr != nil || storageRegionErr != nil {
+	if storageVendorErr != nil || storageRegionErr != nil {
 		log.Fatal("FATAL ERROR: Invalid STORAGE_VENDOR / STORAGE_REGION not properly configured")
 	}
 
-	// Set Storage Config
+	// Configure storage settings based on environment variables.
 	storageConfig := cloud_recording_service.StorageConfig{
-		Vendor:    storageVenderInt,
+		Vendor:    storageVendorInt,
 		Region:    storageRegionInt,
 		Bucket:    storageBucketEnv,
 		AccessKey: storageAccessKeyEnv,
 		SecretKey: storageSecretKeyEnv,
 	}
 
-	// Initialize Gin router
+	// Set up the Gin HTTP router with middleware for CORS, caching, and timestamp.
 	r := gin.Default()
-
-	// add headers
 	var middleware = middleware.NewMiddleware(corsAllowOrigin)
 	r.Use(middleware.NoCache())
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.TimestampMiddleware())
 
-	// Create instances of your services
+	// Initialize token and cloud recording services.
 	tokenService := token_service.NewTokenService(appIDEnv, appCertEnv, corsAllowOrigin)
 	cloudRecordingService := cloud_recording_service.NewCloudRecordingService(appIDEnv, baseURLEnv+cloudRecordingURLEnv, getBasicAuth(customerIDEnv, customerSecretEnv), tokenService, storageConfig)
 
-	// Register routes for each service
+	// Register routes for token and cloud recording services.
 	tokenService.RegisterRoutes(r)
 	cloudRecordingService.RegisterRoutes(r)
 	r.GET("/ping", Ping)
 
-	// Get the server port from environment variables or use a default
+	// Retrieve server port from environment variables or default to 8080.
 	serverPort, exists := os.LookupEnv("SERVER_PORT")
 	if !exists {
 		serverPort = "8080"
 	}
 
-	// Configure and start the HTTP server
+	// Configure and start the HTTP server.
 	server := &http.Server{
 		Addr:    ":" + serverPort,
 		Handler: r,
 	}
 
-	// Start the server in a goroutine
+	// Start the server in a separate goroutine to handle graceful shutdown.
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
 
-	// Create a buffered channel to receive OS signals
+	// Prepare to handle graceful shutdown.
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
-	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.
+	// Wait for a shutdown signal.
 	<-quit
 	log.Println("Shutting down server...")
 
+	// Attempt to gracefully shutdown the server with a timeout of 5 seconds.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
@@ -114,23 +116,14 @@ func main() {
 	log.Println("Server exiting")
 }
 
-// Ping is a simple handler for the /ping route.
-// It responds with a "pong" message to indicate that the service is running.
-//
-// Parameters:
-//   - c: *gin.Context - The Gin context representing the HTTP request and response.
-//
-// Behavior:
-//   - Sends a JSON response with a "pong" message.
-//
-// Notes:
-//   - This function is useful for health checks and ensuring that the service is up and running.
+// Ping is a handler function for the "/ping" route. It serves as a basic health check endpoint.
 func Ping(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "pong",
 	})
 }
 
+// getBasicAuth generates a basic authentication string from a customer ID and secret.
 func getBasicAuth(customerID string, customerSecret string) string {
 	auth := fmt.Sprintf("%s:%s", customerID, customerSecret)
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
