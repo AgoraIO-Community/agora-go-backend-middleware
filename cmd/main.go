@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -46,6 +47,9 @@ func main() {
 		log.Fatal("FATAL ERROR: ENV not properly configured, check .env file for all required variables")
 	}
 
+	//replace the place-holder value with appID
+	cloudRecordingUrl := baseURLEnv + strings.Replace(cloudRecordingURLEnv, "{appId}", appIDEnv, 1)
+
 	// Convert storage vendor and region environment variables to integers.
 	storageVendorInt, storageVendorErr := strconv.Atoi(storageVendorEnv)
 	storageRegionInt, storageRegionErr := strconv.Atoi(storageRegionEnv)
@@ -72,7 +76,7 @@ func main() {
 
 	// Initialize token and cloud recording services.
 	tokenService := token_service.NewTokenService(appIDEnv, appCertEnv, corsAllowOrigin)
-	cloudRecordingService := cloud_recording_service.NewCloudRecordingService(appIDEnv, baseURLEnv+cloudRecordingURLEnv, getBasicAuth(customerIDEnv, customerSecretEnv), tokenService, storageConfig)
+	cloudRecordingService := cloud_recording_service.NewCloudRecordingService(appIDEnv, cloudRecordingUrl, getBasicAuth(customerIDEnv, customerSecretEnv), tokenService, storageConfig)
 
 	// Register routes for token and cloud recording services.
 	tokenService.RegisterRoutes(r)

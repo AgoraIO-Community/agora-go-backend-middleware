@@ -22,11 +22,11 @@ import (
 //   - Interprets the API's JSON response to extract the resource ID if the operation succeeds.
 //
 // Notes:
-//   - Assumes the availability of s.baseURL, s.appID, s.customerID, and s.customerCertificate for constructing
-//     the API request.
+//   - Assumes the availability of s.baseURL for constructing the request URL.
 func (s *CloudRecordingService) HandleAcquireResourceReq(acquireReq AcquireResourceRequest) (string, error) {
+
 	// Construct the URL for the POST request to acquire a cloud recording resource.
-	url := fmt.Sprintf("%s/%s/cloud_recording/acquire", s.baseURL, s.appID)
+	url := fmt.Sprintf("%s/acquire", s.baseURL)
 
 	// Send the POST request to the Agora cloud recording API.
 	body, err := s.makeRequest("POST", url, acquireReq)

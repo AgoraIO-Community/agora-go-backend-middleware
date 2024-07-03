@@ -25,11 +25,13 @@ import (
 //   - Appends a timestamp to the response for auditing purposes before returning the final response.
 //
 // Notes:
-//   - Assumes the presence of s.baseURL, s.appID, s.customerID, and s.customerCertificate to construct the API request.
+//   - Assumes the presence of s.baseURL to construct the request URL.
 //   - Utilizes s.makeRequest to handle the HTTP request and response efficiently.
 func (s *CloudRecordingService) HandleUpdateSubscriptionList(updateReq UpdateSubscriptionRequest, resourceId string, recordingId string, modeType string) (json.RawMessage, error) {
 	// Construct the URL for the update subscription endpoint.
-	url := fmt.Sprintf("%s/%s/cloud_recording/resourceid/%s/sid/%s/mode/%s/update", s.baseURL, s.appID, resourceId, recordingId, modeType)
+	url := fmt.Sprintf("%s/resourceid/%s/sid/%s/mode/%s/update", s.baseURL, resourceId, recordingId, modeType)
+
+	fmt.Println("HandleAcquireResourceReq with url: ", url)
 
 	// Send a POST request to the update subscription endpoint with the new details.
 	body, err := s.makeRequest("POST", url, updateReq)
