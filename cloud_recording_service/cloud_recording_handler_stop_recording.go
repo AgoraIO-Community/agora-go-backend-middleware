@@ -25,11 +25,13 @@ import (
 //   - Adds a timestamp to the response for auditing purposes before returning the final response.
 //
 // Notes:
-//   - The function assumes the availability of s.baseURL, s.appID, s.customerID, and s.customerCertificate to construct the API request.
+//   - The function assumes the availability of s.baseURL to construct the request URL.
 //   - This function throws errors if any identifiers or request parameters are invalid or nil, ensuring robust error handling.
 func (s *CloudRecordingService) HandleStopRecording(stopReq StopRecordingRequest, resourceId string, recordingId string, modeType string) (json.RawMessage, error) {
 	// Construct the URL for the stop recording endpoint.
-	url := fmt.Sprintf("%s/%s/cloud_recording/resourceid/%s/sid/%s/mode/%s/stop", s.baseURL, s.appID, resourceId, recordingId, modeType)
+	url := fmt.Sprintf("%s/resourceid/%s/sid/%s/mode/%s/stop", s.baseURL, resourceId, recordingId, modeType)
+
+	fmt.Println("HandleAcquireResourceReq with url: ", url)
 
 	// Send a POST request to the stop recording endpoint.
 	body, err := s.makeRequest("POST", url, stopReq)

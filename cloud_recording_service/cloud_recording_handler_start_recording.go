@@ -25,11 +25,13 @@ import (
 //   - Appends a timestamp to the response for record-keeping before returning the modified response.
 //
 // Notes:
-//   - Assumes the presence of s.baseURL and s.appID for constructing the request URL.
+//   - Assumes the presence of s.baseURL for constructing the request URL.
 //   - Utilizes s.makeRequest for sending the HTTP request and handling the response.
 func (s *CloudRecordingService) HandleStartRecordingReq(startReq StartRecordingRequest, resourceId string, modeType string) (json.RawMessage, error) {
 	// Construct the URL for the start recording endpoint.
-	url := fmt.Sprintf("%s/%s/cloud_recording/resourceid/%s/mode/%s/start", s.baseURL, s.appID, resourceId, modeType)
+	url := fmt.Sprintf("%s/resourceid/%s/mode/%s/start", s.baseURL, resourceId, modeType)
+
+	fmt.Println("HandleAcquireResourceReq with url: ", url)
 
 	// Send a POST request to the start recording endpoint.
 	body, err := s.makeRequest("POST", url, startReq)

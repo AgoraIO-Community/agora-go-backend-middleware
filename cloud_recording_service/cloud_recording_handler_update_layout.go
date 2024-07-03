@@ -25,11 +25,13 @@ import (
 //   - Appends a timestamp to the response for auditing purposes before returning the final response.
 //
 // Notes:
-//   - Assumes the presence of s.baseURL, s.appID, s.customerID, and s.customerCertificate to construct the API request.
+//   - Assumes the presence of s.baseURL to construct the request URL.
 //   - The function uses s.makeRequest to handle the HTTP request and response handling efficiently.
 func (s *CloudRecordingService) HandleUpdateLayout(updateReq UpdateLayoutRequest, resourceId string, recordingId string, modeType string) (json.RawMessage, error) {
 	// Build the URL for the update layout endpoint.
-	url := fmt.Sprintf("%s/%s/cloud_recording/resourceid/%s/sid/%s/mode/%s/updateLayout", s.baseURL, s.appID, resourceId, recordingId, modeType)
+	url := fmt.Sprintf("%s/resourceid/%s/sid/%s/mode/%s/updateLayout", s.baseURL, resourceId, recordingId, modeType)
+
+	fmt.Println("HandleAcquireResourceReq with url: ", url)
 
 	// Send a POST request to the update layout endpoint with the new settings.
 	body, err := s.makeRequest("POST", url, updateReq)

@@ -18,13 +18,12 @@ import (
 //   - error: Error object if an issue occurs during the API call.
 //
 // Notes:
-//   - Assumes availability of s.baseURL, s.appID, s.customerID, and s.customerCertificate
-//     for constructing the API request.
+//   - Assumes availability of s.baseURL for constructing the request URL.
 //   - Uses s.makeRequest to send the HTTP request and handles the response.
 func (s *CloudRecordingService) HandleGetStatus(resourceId string, recordingId string, modeType string) (json.RawMessage, error) {
 
 	// Construct the URL for the GET request to the cloud recording status endpoint.
-	url := fmt.Sprintf("%s/%s/cloud_recording/resourceid/%s/sid/%s/mode/%s/query", s.baseURL, s.appID, resourceId, recordingId, modeType)
+	url := fmt.Sprintf("%s/resourceid/%s/sid/%s/mode/%s/query", s.baseURL, resourceId, recordingId, modeType)
 
 	// Send the GET request to the Agora cloud recording API.
 	body, err := s.makeRequest("GET", url, nil)
