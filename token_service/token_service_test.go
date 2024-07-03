@@ -10,14 +10,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Mock credentials for testing
-const (
-	mockAppID          = "test-app-id"
-	mockAppCertificate = "test-certificate"
-)
+// NewTestTokenService creates a TokenService instance for testing
+func NewTestTokenService() *TokenService {
+	// Mock credentials for testing
+	return &TokenService{
+		appID:          "6ce46dd303d54056a52f9a34c13c547e",
+		appCertificate: "77be7e16f7482cef9fe796205b85831e",
+		allowOrigin:    "*",
+	}
+}
 
 func TestGenRtcToken(t *testing.T) {
-	service := NewTokenService(mockAppID, mockAppCertificate, "*")
+	service := NewTestTokenService()
 
 	tests := []struct {
 		name    string
@@ -64,12 +68,13 @@ func TestGenRtcToken(t *testing.T) {
 			if !tt.wantErr && token == "" {
 				t.Errorf("GenRtcToken() returned empty token")
 			}
+			t.Logf("Generated token: %s", token)
 		})
 	}
 }
 
 func TestGenRtmToken(t *testing.T) {
-	service := NewTokenService(mockAppID, mockAppCertificate, "*")
+	service := NewTestTokenService()
 
 	tests := []struct {
 		name    string
@@ -108,7 +113,7 @@ func TestGenRtmToken(t *testing.T) {
 }
 
 func TestGenChatToken(t *testing.T) {
-	service := NewTokenService(mockAppID, mockAppCertificate, "*")
+	service := NewTestTokenService()
 
 	tests := []struct {
 		name    string
@@ -142,12 +147,14 @@ func TestGenChatToken(t *testing.T) {
 			if !tt.wantErr && token == "" {
 				t.Errorf("GenChatToken() returned empty token")
 			}
+			t.Logf("Generated token: %s", token)
 		})
 	}
 }
 
 func TestGetToken(t *testing.T) {
-	service := NewTokenService(mockAppID, mockAppCertificate, "*")
+	gin.SetMode(gin.TestMode)
+	service := NewTestTokenService()
 
 	tests := []struct {
 		name           string
@@ -187,7 +194,10 @@ func TestGetToken(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			rr := httptest.NewRecorder()
 
-			service.GetToken(NewTestContext(rr, req))
+			c, _ := gin.CreateTestContext(rr)
+			c.Request = req
+
+			service.GetToken(c)
 
 			if status := rr.Code; status != tt.wantStatusCode {
 				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.wantStatusCode)
@@ -207,11 +217,4 @@ func TestGetToken(t *testing.T) {
 			}
 		})
 	}
-}
-
-// NewTestContext is a helper function to create a test gin.Context
-func NewTestContext(w http.ResponseWriter, r *http.Request) *gin.Context {
-	c, _ := gin.CreateTestContext(w)
-	c.Request = r
-	return c
 }
