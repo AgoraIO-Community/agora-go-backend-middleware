@@ -32,6 +32,9 @@ func (s *CloudRecordingService) makeRequest(method, url string, body interface{}
 	if method == "GET" {
 		// Create request without body for GET
 		req, err = http.NewRequest(method, url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error making GET request: %v", err)
+		}
 	} else if body != nil {
 		// Marshal the request body into JSON
 		jsonBody, err := json.Marshal(body)
