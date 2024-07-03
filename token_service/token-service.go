@@ -33,21 +33,23 @@ type TokenRequest struct {
 	ExpirationSeconds int    `json:"expire,omitempty"`  // The token expiration time in seconds (used for all token types)
 }
 
-// NewTokenService returns a TokenService pointer with all configurations set.
+// NewTokenService initializes and returns a TokenService pointer with all configurations set.
 // It loads environment variables, validates their presence, and initializes the TokenService struct.
+//
+// Parameters:
+//   - appIDEnv: string - The environment variable for the Agora app ID.
+//   - appCertEnv: string - The environment variable for the Agora app certificate.
+//   - corsAllowOrigin: string - The allowed origin for CORS.
 //
 // Returns:
 //   - *TokenService: The initialized TokenService struct.
 //
 // Behavior:
-//   - Loads environment variables from the .env file.
-//   - Retrieves and validates necessary environment variables.
-//   - Initializes and returns a TokenService struct with the loaded configurations.
+//   - Initializes and returns a TokenService struct with the provided configurations.
 //
 // Notes:
-//   - Logs a fatal error and exits if any required environment variables are missing.
+//   - The necessary environment variables should be set before initializing the TokenService.
 func NewTokenService(appIDEnv string, appCertEnv string, corsAllowOrigin string) *TokenService {
-
 	return &TokenService{
 		appID:          appIDEnv,
 		appCertificate: appCertEnv,
@@ -65,7 +67,7 @@ func NewTokenService(appIDEnv string, appCertEnv string, corsAllowOrigin string)
 // Behavior:
 //   - Creates an API group for token routes.
 //   - Applies middleware for NoCache and CORS.
-//   - Registers routes for ping and getNew token.
+//   - Registers routes for getting a new token.
 //
 // Notes:
 //   - This function organizes the API routes and ensures that requests are handled with appropriate middleware.
@@ -74,7 +76,7 @@ func (s *TokenService) RegisterRoutes(r *gin.Engine) {
 	api.POST("/getNew", s.GetToken)
 }
 
-// GetToken is a helper function that acts as a proxy to the HandleGetToken method.
+// GetToken handles the HTTP request to generate a token based on the provided TokenRequest.
 // It forwards the HTTP response writer and request from the provided *gin.Context
 // to the HandleGetToken method for token generation and response sending.
 //
@@ -82,11 +84,12 @@ func (s *TokenService) RegisterRoutes(r *gin.Engine) {
 //   - c: *gin.Context - The Gin context representing the HTTP request and response.
 //
 // Behavior:
-//   - Forwards the HTTP response writer and request to the HandleGetToken method.
+//   - Parses the request body into a TokenRequest struct.
+//   - Forwards the HTTP response writer and request to the HandleGetToken method for processing.
 //
 // Notes:
 //   - This function acts as an intermediary to invoke the HandleGetToken method.
-//   - It handles validating the request before sending invoking token generation and response writer through a common function.
+//   - It handles parsing the request body and passing it to the token generation logic.
 //
 // Example usage:
 //
