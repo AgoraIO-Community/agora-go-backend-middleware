@@ -1,4 +1,4 @@
-module github.com/AgoraIO-Community/agora-backend-service
+module github.com/AgoraIO-Community/agora-go-backend-middleware
 
 go 1.19
 

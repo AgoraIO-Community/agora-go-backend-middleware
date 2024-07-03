@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AgoraIO-Community/agora-backend-service/token_service"
+	"github.com/AgoraIO-Community/agora-go-backend-middleware/token_service"
 	"github.com/gin-gonic/gin"
 )
 

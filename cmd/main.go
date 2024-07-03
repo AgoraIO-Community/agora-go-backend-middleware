@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/AgoraIO-Community/agora-backend-service/cloud_recording_service"
-	"github.com/AgoraIO-Community/agora-backend-service/middleware"
-	"github.com/AgoraIO-Community/agora-backend-service/token_service"
+	"github.com/AgoraIO-Community/agora-go-backend-middleware/cloud_recording_service"
+	"github.com/AgoraIO-Community/agora-go-backend-middleware/middleware"
+	"github.com/AgoraIO-Community/agora-go-backend-middleware/token_service"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
