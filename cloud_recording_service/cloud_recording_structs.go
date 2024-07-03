@@ -162,8 +162,8 @@ func (s *StartRecordingResponse) SetTimestamp(timestamp string) {
 	s.Timestamp = &timestamp
 }
 
-// StopRecordingResponse main struct for the recording response
-type StopRecordingResponse struct {
+// ActiveRecordingResponse main struct for the recording response
+type ActiveRecordingResponse struct {
 	ResourceId     *string        `json:"resourceId"`
 	Sid            *string        `json:"sid"`
 	ServerResponse ServerResponse `json:"serverResponse,omitempty"` // Use RawMessage to defer unmarshaling
@@ -172,7 +172,7 @@ type StopRecordingResponse struct {
 	Timestamp      *string        `json:"timestamp,omitempty"`
 }
 
-func (s *StopRecordingResponse) SetTimestamp(timestamp string) {
+func (s *ActiveRecordingResponse) SetTimestamp(timestamp string) {
 	s.Timestamp = &timestamp
 }
 
