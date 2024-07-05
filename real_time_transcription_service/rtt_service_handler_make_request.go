@@ -31,11 +31,11 @@ func (s *RTTService) makeRequest(method, url string, body interface{}) ([]byte, 
 	var req *http.Request
 	var err error
 
-	if method == "GET" {
-		// Create a GET request without a body.
+	if method == "GET" || (method == "DELETE" && body == nil) {
+		// Create a GET / DELETE request without a body.
 		req, err = http.NewRequest(method, url, nil)
 		if err != nil {
-			return nil, fmt.Errorf("error making GET request: %v", err)
+			return nil, fmt.Errorf("error making %s request: %v", method, err)
 		}
 	} else if body != nil {
 		// Marshal the provided body into JSON for the request.
