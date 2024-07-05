@@ -5,10 +5,11 @@ import "github.com/AgoraIO-Community/agora-go-backend-middleware/cloud_recording
 // ClientStartRTTRequest represents the JSON payload structure sent by the client to start real time transcription.
 // It includes the instance ID ,
 type ClientStartRTTRequest struct {
-	ChannelName     string    `json:"channelName"`               // The name of the channel to transcribe
-	ProfanityFilter *bool     `json:"profanityFilter,omitempty"` // Optional Text filter, default is false
-	Destinations    *[]string `json:"destinations,omitempty"`    // List of output destination, if empty defaults to ["AgoraRTCDataStream"]
-	MaxIdleTime     *int      `json:"maxIdleTime"`               // The default is 30 seconds. The unit is seconds, Range 5 seconds - 2592000 seconds (30 days)
+	ChannelName        string    `json:"channelName"`                  // The name of the channel to transcribe
+	ProfanityFilter    *bool     `json:"profanityFilter,omitempty"`    // Optional Text filter, default is false
+	Destinations       *[]string `json:"destinations,omitempty"`       // List of output destination, if empty defaults to ["AgoraRTCDataStream"]
+	MaxIdleTime        *int      `json:"maxIdleTime,omitempty"`        // The default is 30 seconds. The unit is seconds, Range 5 seconds - 2592000 seconds (30 days)
+	EnableNTPtimestamp *bool     `json:"enableNTPtimestamp,omitempty"` // Use to enable subtitle sync
 }
 
 // AcquireBuilderTokenRequest defines the structure for a request to acquire a builder token for real time transcription
@@ -18,8 +19,9 @@ type AcquireBuilderTokenRequest struct {
 }
 
 type StartRTTRequest struct {
-	Audio  Audio  `json:"audio"`  // Audio streaming bot settings
-	Config Config `json:"config"` // Data Stream streaming Bot settings
+	Audio         Audio          `json:"audio"`                   // Audio streaming bot settings
+	Config        Config         `json:"config"`                  // Data Stream streaming Bot settings
+	PrivateParams *PrivateParams `json:"privateParams,omitempty"` // Use to enable subtitle sync
 }
 
 type Audio struct {
@@ -41,21 +43,21 @@ type SubscribeConfig struct {
 }
 
 type Config struct {
-	Features        []string        `json:"features"`
+	Features        []string        `json:"features"` // The current value is fixed: ["RECOGNIZE"]
 	RecognizeConfig RecognizeConfig `json:"recognizeConfig"`
 }
 
 type RecognizeConfig struct {
-	Language        string `json:"language"`
-	Model           string `json:"model"`
-	ProfanityFilter *bool  `json:"profanityFilter,omitempty"`
-	Output          Output `json:"output"`
+	Language        string `json:"language"`                  // The current version supports at most two, separated by commas.
+	Model           string `json:"model"`                     // The current value is fixed: "Model"
+	ProfanityFilter *bool  `json:"profanityFilter,omitempty"` // Optional. Text filter,
+	Output          Output `json:"output"`                    // Output settings for conversion result
 }
 
 type Output struct {
-	Destinations       []string           `json:"destinations"`
-	AgoraRTCDataStream AgoraRTCDataStream `json:"agoraRTCDataStream"`
-	CloudStorage       []CloudStorage     `json:"cloudStorage"`
+	Destinations       []string           `json:"destinations"`       // Output target, AgoraRTCDataStream is required but Storage is optional.
+	AgoraRTCDataStream AgoraRTCDataStream `json:"agoraRTCDataStream"` // Output data stream RTC settings
+	CloudStorage       *[]CloudStorage    `json:"cloudStorage"`       // Optional storage setting, write transcriptions to cloud storage
 }
 
 type AgoraRTCDataStream struct {
@@ -65,8 +67,12 @@ type AgoraRTCDataStream struct {
 }
 
 type CloudStorage struct {
-	Format        string                                `json:"format"`
+	Format        string                                `json:"format"` // The current value is fixed: "HLS"
 	StorageConfig cloud_recording_service.StorageConfig `json:"storageConfig"`
+}
+
+type PrivateParams struct {
+	EnableNTPtimestamp bool `json:"enableNTPtimestamp"`
 }
 
 // Timestampable is an interface that allows struct types to receive a timestamp.
@@ -98,5 +104,15 @@ type StartRTTResponse struct {
 }
 
 func (s *StartRTTResponse) SetTimestamp(timestamp string) {
+	s.Timestamp = &timestamp
+}
+
+// StopRTTResponse represents the response received from the Agora server after successfully starting a recording.
+// It includes the identifiers of the recording session along with an optional timestamp.
+type StopRTTResponse struct {
+	Timestamp *string `json:"timestamp,omitempty"` // Optional timestamp for when the recording was started.
+}
+
+func (s *StopRTTResponse) SetTimestamp(timestamp string) {
 	s.Timestamp = &timestamp
 }

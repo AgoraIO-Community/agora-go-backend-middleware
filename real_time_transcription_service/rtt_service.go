@@ -3,6 +3,7 @@ package real_time_transcription_service
 import (
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/cloud_recording_service"
@@ -49,21 +50,90 @@ func (s *RTTService) StartRTT(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	s.ValidateAndSetDefaults(&clientStartReq)
+
 	// Acquire Builder Token
 	acquireReq := AcquireBuilderTokenRequest{
 		InstanceId: clientStartReq.ChannelName,
 	}
-	acquireResponse, err := s.HandleAcquireResourceReq(acquireReq)
+	acquireResponse, builderToken, err := s.HandleAcquireBuilderTokenReq(acquireReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to acquire resource: " + err.Error()})
 		return
 	}
-	// Build the full StartRTTRequest
+
+	// Generate a unique UID for this recording session
+	uid := s.GenerateUID()
+
+	// Generate token for recording using token_service
+	tokenRequest := token_service.TokenRequest{
+		TokenType: "rtc",
+		Channel:   clientStartReq.ChannelName,
+		Uid:       uid,
+	}
+	token, err := s.tokenService.GenRtcToken(tokenRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Construct the start request
+	startRttRequest := StartRTTRequest{
+		Audio: Audio{
+			SubscribeSource: "AGORARTC",
+			AgoraRtcConfig: AgoraRtcConfig{
+				ChannelName:     clientStartReq.ChannelName,
+				UID:             uid,
+				Token:           token,
+				ChannelType:     "LIVE_TYPE",
+				SubscribeConfig: SubscribeConfig{},
+				MaxIdleTime:     *clientStartReq.MaxIdleTime,
+			},
+		},
+		Config: Config{
+			Features: []string{"RECOGNIZE"},
+			RecognizeConfig: RecognizeConfig{
+				Language:        "",
+				Model:           "Model",
+				ProfanityFilter: clientStartReq.ProfanityFilter,
+				Output: Output{
+					Destinations:       *clientStartReq.Destinations,
+					AgoraRTCDataStream: AgoraRTCDataStream{},
+				},
+			},
+		},
+	}
+
+	// If storage is in destinations list, add storage config
+	if s.Contains(clientStartReq.Destinations, "Storage") {
+		// Add dynamic directory structure ChannelName/YYYYMMDD/HHMMSS
+		currentTimeUTC := time.Now().UTC()
+		dateStr := currentTimeUTC.Format("20060102")
+		hrsMinSecStr := currentTimeUTC.Format("150405")
+		s.storageConfig.FileNamePrefix = &[]string{strings.ReplaceAll(clientStartReq.ChannelName, "-", ""), dateStr, hrsMinSecStr}
+		// set cloud storage in request
+		startRttRequest.Config.RecognizeConfig.Output.CloudStorage = &[]CloudStorage{
+			{Format: "HLS", StorageConfig: s.storageConfig},
+		}
+	}
+
+	// Enable for subtitle sync
+	if clientStartReq.EnableNTPtimestamp != nil {
+		startRttRequest.PrivateParams.EnableNTPtimestamp = *clientStartReq.EnableNTPtimestamp
+	}
+
+	// Make the Start Request to Agora Endpoint
+	startResponse, err := s.HandleStartReq(startRttRequest, builderToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to acquire resource: " + err.Error()})
+		return
+	}
 
 	// Return Resource ID and Recording ID
 	c.JSON(http.StatusOK, gin.H{
-		"acquire": acquireResponse,
-		// "start":     startResponse,
+		"acquire":   acquireResponse,
+		"start":     startResponse,
 		"timestamp": time.Now().UTC(),
 	})
 
