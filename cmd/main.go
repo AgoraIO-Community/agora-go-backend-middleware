@@ -15,6 +15,7 @@ import (
 
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/cloud_recording_service"
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/middleware"
+	"github.com/AgoraIO-Community/agora-go-backend-middleware/real_time_transcription_service"
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/token_service"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -35,6 +36,7 @@ func main() {
 	corsAllowOrigin, _ := os.LookupEnv("CORS_ALLOW_ORIGIN")
 	baseURLEnv, baseURLExists := os.LookupEnv("AGORA_BASE_URL")
 	cloudRecordingURLEnv, cloudRecordingURLExists := os.LookupEnv("AGORA_CLOUD_RECORDING_URL")
+	realTimeTranscriptionURLEnv, realTimeTranscriptionURLExists := os.LookupEnv("AGORA_RTT_URL")
 	storageVendorEnv, vendorExists := os.LookupEnv("STORAGE_VENDOR")
 	storageRegionEnv, regionExists := os.LookupEnv("STORAGE_REGION")
 	storageBucketEnv, bucketExists := os.LookupEnv("STORAGE_BUCKET")
@@ -42,13 +44,14 @@ func main() {
 	storageSecretKeyEnv, secretKeyExists := os.LookupEnv("STORAGE_BUCKET_SECRET_KEY")
 
 	// Check for the presence of all required environment variables and exit if any are missing.
-	if !appIDExists || !appCertExists || !customerIDExists || !customerSecretExists || !baseURLExists || !cloudRecordingURLExists ||
+	if !appIDExists || !appCertExists || !customerIDExists || !customerSecretExists || !baseURLExists || !cloudRecordingURLExists || !realTimeTranscriptionURLExists ||
 		!secretKeyExists || !vendorExists || !regionExists || !bucketExists || !accessKeyExists {
 		log.Fatal("FATAL ERROR: ENV not properly configured, check .env file for all required variables")
 	}
 
 	//replace the place-holder value with appID
 	cloudRecordingUrl := baseURLEnv + strings.Replace(cloudRecordingURLEnv, "{appId}", appIDEnv, 1)
+	realTimeTranscriptionUrl := baseURLEnv + strings.Replace(realTimeTranscriptionURLEnv, "{appId}", appIDEnv, 1)
 
 	// Convert storage vendor and region environment variables to integers.
 	storageVendorInt, storageVendorErr := strconv.Atoi(storageVendorEnv)
@@ -68,20 +71,24 @@ func main() {
 	}
 
 	// Set up the Gin HTTP router with middleware for CORS, caching, and timestamp.
-	r := gin.Default()
+	router := gin.Default()
 	var middleware = middleware.NewMiddleware(corsAllowOrigin)
-	r.Use(middleware.NoCache())
-	r.Use(middleware.CORSMiddleware())
-	r.Use(middleware.TimestampMiddleware())
+	router.Use(middleware.NoCache())
+	router.Use(middleware.CORSMiddleware())
+	router.Use(middleware.TimestampMiddleware())
 
+	// get basicAuth key
+	basicAuthKey := getBasicAuth(customerIDEnv, customerSecretEnv)
 	// Initialize token and cloud recording services.
 	tokenService := token_service.NewTokenService(appIDEnv, appCertEnv, corsAllowOrigin)
-	cloudRecordingService := cloud_recording_service.NewCloudRecordingService(appIDEnv, cloudRecordingUrl, getBasicAuth(customerIDEnv, customerSecretEnv), tokenService, storageConfig)
+	cloudRecordingService := cloud_recording_service.NewCloudRecordingService(appIDEnv, cloudRecordingUrl, basicAuthKey, tokenService, storageConfig)
+	realTimeTranscriptionService := real_time_transcription_service.NewRTTService(appIDEnv, realTimeTranscriptionUrl, basicAuthKey, tokenService, storageConfig)
 
 	// Register routes for token and cloud recording services.
-	tokenService.RegisterRoutes(r)
-	cloudRecordingService.RegisterRoutes(r)
-	r.GET("/ping", Ping)
+	tokenService.RegisterRoutes(router)
+	cloudRecordingService.RegisterRoutes(router)
+	realTimeTranscriptionService.RegisterRoutes(router)
+	router.GET("/ping", Ping)
 
 	// Retrieve server port from environment variables or default to 8080.
 	serverPort, exists := os.LookupEnv("SERVER_PORT")
@@ -92,7 +99,7 @@ func main() {
 	// Configure and start the HTTP server.
 	server := &http.Server{
 		Addr:    ":" + serverPort,
-		Handler: r,
+		Handler: router,
 	}
 
 	// Start the server in a separate goroutine to handle graceful shutdown.
