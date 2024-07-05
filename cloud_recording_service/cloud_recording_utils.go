@@ -11,7 +11,7 @@ import (
 // generateUID generates a unique user identifier for use within cloud recording sessions.
 // This function ensures the UID is never zero, which is reserved, by generating a random
 // number between 1 and the maximum possible 32-bit integer value.
-func generateUID() string {
+func (s *CloudRecordingService) GenerateUID() string {
 	// Generate a random number starting from 1 to avoid 0, which is reserved.
 	uid := rand.Intn(4294967294) + 1
 

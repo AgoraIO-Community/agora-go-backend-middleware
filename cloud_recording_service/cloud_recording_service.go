@@ -107,7 +107,7 @@ func (s *CloudRecordingService) StartRecording(c *gin.Context) {
 	}
 
 	// Generate a unique UID for this recording session
-	uid := generateUID()
+	uid := s.GenerateUID()
 
 	// Generate token for recording using token_service
 	tokenRequest := token_service.TokenRequest{
