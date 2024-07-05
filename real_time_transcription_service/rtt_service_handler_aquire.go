@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// HandleAcquireResourceReq constructs a URL, marshals the request payload, sends it to the Agora cloud recording API,
+// HandleAcquireBuilderTokenReq constructs a URL, marshals the request payload, sends it to the Agora cloud recording API,
 // and processes the response to acquire a resource for cloud recording.
 //
 // Parameters:
@@ -23,7 +23,7 @@ import (
 //
 // Notes:
 //   - Assumes the availability of s.baseURL for constructing the request URL.
-func (s *RTTService) HandleAcquireResourceReq(acquireReq AcquireBuilderTokenRequest) (json.RawMessage, error) {
+func (s *RTTService) HandleAcquireBuilderTokenReq(acquireReq AcquireBuilderTokenRequest) (json.RawMessage, string, error) {
 
 	// Construct the URL for the POST request to acquire a cloud recording resource.
 	url := fmt.Sprintf("%s/builderTokens", s.baseURL)
@@ -31,21 +31,21 @@ func (s *RTTService) HandleAcquireResourceReq(acquireReq AcquireBuilderTokenRequ
 	// Send the POST request to the Agora cloud recording API.
 	body, err := s.makeRequest("POST", url, acquireReq)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Parse the response body into a struct to validate the response
 	var response AcquireBuilderTokenResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing response: %v", err)
+		return nil, "", fmt.Errorf("error parsing response: %v", err)
 	}
 
 	// Append a timestamp to the Agora response for auditing and record-keeping purposes.
 	timestampBody, err := s.AddTimestamp(&response)
 	if err != nil {
-		return nil, fmt.Errorf("error encoding timestamped response: %v", err)
+		return nil, "", fmt.Errorf("error encoding timestamped response: %v", err)
 	}
 
-	return timestampBody, nil
+	return timestampBody, response.TokenName, nil
 }
