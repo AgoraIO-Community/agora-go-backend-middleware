@@ -101,7 +101,7 @@ func (s *CloudRecordingService) StartRecording(c *gin.Context) {
 
 	// Validate recording mode against a set list
 	validRecordingModes := []string{"individual", "mix", "web"}
-	if !Contains(validRecordingModes, recordingMode) {
+	if !s.ValidateRecordingMode(validRecordingModes, recordingMode) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid recording mode."})
 		return
 	}

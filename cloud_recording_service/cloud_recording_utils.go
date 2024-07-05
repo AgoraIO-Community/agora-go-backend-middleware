@@ -19,11 +19,11 @@ func (s *CloudRecordingService) GenerateUID() string {
 	return strconv.Itoa(uid)
 }
 
-// Contains checks if a specific string is present within a slice of strings.
+// ValidateRecordingMode checks if a specific string is present within a slice of strings.
 // This is useful for determining if a particular item exists within a list.
-func Contains(list []string, item string) bool {
-	for _, a := range list {
-		if a == item {
+func (s *CloudRecordingService) ValidateRecordingMode(valideModes []string, modeToCheck string) bool {
+	for _, mode := range valideModes {
+		if mode == modeToCheck {
 			return true
 		}
 	}
