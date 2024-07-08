@@ -5,6 +5,19 @@ import "github.com/AgoraIO-Community/agora-go-backend-middleware/cloud_recording
 // ClientStartRTTRequest represents the JSON payload structure sent by the client to start real time transcription.
 // It includes the instance ID ,
 type ClientStartRTTRequest struct {
+	ChannelName        string           `json:"channelName"`            // The name of the channel to transcribe
+	Languages          []string         `json:"languages"`              // The language(s) to transcribe
+	SubscribeAudioUIDs []string         `json:"subscribeAudioUids"`     // A list of UID's to subscribe to in the channel. Max 3
+	CryptionMode       *string          `json:"cryptionMode,omitempty"` // Cryption mode (Optional, if need cryption for audio and caption text)
+	Secret             *string          `json:"secret,omitempty"`       // Cryption secret (Optional, if need decryption for audio and caption text)
+	Salt               *string          `json:"salt,omitempty"`         // Cryption salt (Optional, if need decryption for audio and caption text)forceTranslateInterval.languages
+	MaxIdleTime        *int             `json:"maxIdleTime,omitempty"`  // The default is 30 seconds. The unit is seconds, Range 5 seconds - 2592000 seconds (30 days)
+	TranslateConfig    *TranslateConfig `json:"translateConfig,omitempty"`
+	EnableStorage      *bool            `json:"enableStorage,omitempty"`      // Use to enable storage of captions
+	EnableNTPtimestamp *bool            `json:"enableNTPtimestamp,omitempty"` // Use to enable subtitle sync
+}
+
+type ClientStartRTTV1Request struct {
 	ChannelName        string    `json:"channelName"`                  // The name of the channel to transcribe
 	ProfanityFilter    *bool     `json:"profanityFilter,omitempty"`    // Optional Text filter, default is false
 	Destinations       *[]string `json:"destinations,omitempty"`       // List of output destination, if empty defaults to ["AgoraRTCDataStream"]
@@ -19,60 +32,37 @@ type AcquireBuilderTokenRequest struct {
 }
 
 type StartRTTRequest struct {
-	Audio         Audio          `json:"audio"`                   // Audio streaming bot settings
-	Config        Config         `json:"config"`                  // Data Stream streaming Bot settings
-	PrivateParams *PrivateParams `json:"privateParams,omitempty"` // Use to enable subtitle sync
+	Languages       []string         `json:"languages"`                 // The language(s) to transcribe
+	MaxIdleTime     int              `json:"maxIdleTime"`               // If there is no audio stream in the channel for more than this time, the RTT Task will stop automatically.
+	RTCConfig       RTCConfig        `json:"rtcConfig"`                 // The RTC settings for the audio and data bots
+	CaptionConfig   *CaptionConfig   `json:"captionConfig"`             // The cloud recording configuration
+	TranslateConfig *TranslateConfig `json:"translateConfig,omitempty"` // The settings for real-time translation
 }
 
-type Audio struct {
-	SubscribeSource string         `json:"subscribeSource"` // The current value is fixed: "AGORARTC"
-	AgoraRtcConfig  AgoraRtcConfig `json:"agoraRtcConfig"`  // RTC Config for audio bot
+type RTCConfig struct {
+	ChannelName        string   `json:"channelName"`            // The name of the channel to transcribe
+	SubBotUID          string   `json:"subBotUid"`              // The Uid used by the audio streaming bot to join the channel.
+	SubBotToken        *string  `json:"subBotToken"`            // RTC token for the audio streaming bot
+	PubBotUID          string   `json:"pubBotUid"`              // The uid used for Data streaming bot, used to stream text content after conversion.
+	PubBotToken        *string  `json:"pubBotToken"`            // RTC token for the audio streaming bot
+	SubscribeAudioUIDs []string `json:"subscribeAudioUids"`     // A list of UID's to subscribe to in the channel. Max 3
+	CryptionMode       *string  `json:"cryptionMode,omitempty"` // Cryption mode (Optional, if need cryption for audio and caption text)
+	Secret             *string  `json:"secret,omitempty"`       // Cryption secret (Optional, if need decryption for audio and caption text)
+	Salt               *string  `json:"salt,omitempty"`         // Cryption salt (Optional, if need decryption for audio and caption text)forceTranslateInterval.languages
 }
 
-type AgoraRtcConfig struct {
-	ChannelName     string          `json:"channelName"`     // The name of the channel to transcribe
-	UID             string          `json:"uid"`             // The Uid used by the audio streaming bot
-	Token           string          `json:"token"`           // RTC token for the audio streaming bot
-	ChannelType     string          `json:"channelType"`     // The current value is fixed: "LIVE_TYPE"
-	SubscribeConfig SubscribeConfig `json:"subscribeConfig"` // Subscription settings
-	MaxIdleTime     int             `json:"maxIdleTime"`     // If there is no audio stream in the channel for more than this time, the RTT Task will stop automatically.
+type CaptionConfig struct {
+	Storage cloud_recording_service.StorageConfig `json:"storage"`
 }
 
-type SubscribeConfig struct {
-	SubscribeMode string `json:"subscribeMode"` // The current value is fixed: "CHANNEL_MODE"
+type TranslateConfig struct {
+	ForceTranslateInterval int        `json:"forceTranslateInterval"`
+	Languages              []Language `json:"languages"`
 }
 
-type Config struct {
-	Features        []string        `json:"features"` // The current value is fixed: ["RECOGNIZE"]
-	RecognizeConfig RecognizeConfig `json:"recognizeConfig"`
-}
-
-type RecognizeConfig struct {
-	Language        string `json:"language"`                  // The current version supports at most two, separated by commas.
-	Model           string `json:"model"`                     // The current value is fixed: "Model"
-	ProfanityFilter *bool  `json:"profanityFilter,omitempty"` // Optional. Text filter,
-	Output          Output `json:"output"`                    // Output settings for conversion result
-}
-
-type Output struct {
-	Destinations       []string           `json:"destinations"`       // Output target, AgoraRTCDataStream is required but Storage is optional.
-	AgoraRTCDataStream AgoraRTCDataStream `json:"agoraRTCDataStream"` // Output data stream RTC settings
-	CloudStorage       *[]CloudStorage    `json:"cloudStorage"`       // Optional storage setting, write transcriptions to cloud storage
-}
-
-type AgoraRTCDataStream struct {
-	ChannelName string `json:"channelName"` // The target channel name of the conversion result output. (must be same as audio channel)
-	UID         string `json:"uid"`         //  the uid used for streaming text content after conversion.
-	Token       string `json:"token"`
-}
-
-type CloudStorage struct {
-	Format        string                                `json:"format"` // The current value is fixed: "HLS"
-	StorageConfig cloud_recording_service.StorageConfig `json:"storageConfig"`
-}
-
-type PrivateParams struct {
-	EnableNTPtimestamp bool `json:"enableNTPtimestamp"`
+type Language struct {
+	Source string   `json:"source"`
+	Target []string `json:"target"`
 }
 
 // Timestampable is an interface that allows struct types to receive a timestamp.
@@ -94,16 +84,16 @@ func (s *AcquireBuilderTokenResponse) SetTimestamp(timestamp string) {
 	s.Timestamp = &timestamp
 }
 
-// StartRTTResponse represents the response received from the Agora server after successfully starting a recording.
+// AgpraRTTResponse represents the response received from the Agora server after successfully starting a recording.
 // It includes the identifiers of the recording session along with an optional timestamp.
-type StartRTTResponse struct {
+type AgpraRTTResponse struct {
 	CreateTs  int     `json:"createTs"`            // The Unix timestamp (seconds) when the builderToken was generated.
 	Status    string  `json:"status"`              // The channel name for the recording session.
 	TaskId    string  `json:"taskId"`              // a UUID (Universal Unique Identifier) generated by the Agora server to identify the real-time transcription task that has been created.
 	Timestamp *string `json:"timestamp,omitempty"` // Optional timestamp for when the recording was started.
 }
 
-func (s *StartRTTResponse) SetTimestamp(timestamp string) {
+func (s *AgpraRTTResponse) SetTimestamp(timestamp string) {
 	s.Timestamp = &timestamp
 }
 
