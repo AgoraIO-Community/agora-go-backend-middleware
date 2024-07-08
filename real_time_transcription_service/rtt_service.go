@@ -54,8 +54,8 @@ func (s *RTTService) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/rtt")
 	// routes
 	api.POST("/start", s.StartRTT)
-	api.POST("/stop", s.StopRTT)
-	api.GET("/status", s.QueryRTT)
+	api.DELETE("/stop", s.StopRTT)
+	api.GET("/status/:taskId", s.QueryRTT)
 }
 
 // StartRTT handles the starting of the real-time transcription by binding JSON data from client requests,
@@ -71,7 +71,7 @@ func (s *RTTService) StartRTT(c *gin.Context) {
 		return
 	}
 
-	// s.ValidateAndSetDefaults(&clientStartReq) // Validate client request and set default values.
+	s.ValidateAndSetDefaults(&clientStartReq) // Validate client request and set default values.
 
 	// Acquire Builder Token
 	acquireReq := AcquireBuilderTokenRequest{
@@ -112,7 +112,7 @@ func (s *RTTService) StartRTT(c *gin.Context) {
 
 	// Construct the start request
 	startRttRequest := StartRTTRequest{
-		Languages:   []string{},
+		Languages:   clientStartReq.Languages,
 		MaxIdleTime: *clientStartReq.MaxIdleTime,
 		RTCConfig: RTCConfig{
 			ChannelName:        clientStartReq.ChannelName,
@@ -159,5 +159,46 @@ func (s *RTTService) StartRTT(c *gin.Context) {
 	})
 }
 
-func (s *RTTService) StopRTT(c *gin.Context)  {}
-func (s *RTTService) QueryRTT(c *gin.Context) {}
+func (s *RTTService) StopRTT(c *gin.Context) {
+	taskId := c.Param("taskId")
+	var stopReq struct {
+		BuilderToken string `json:"builderToken" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&stopReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	stopResponse, err := s.HandleStopReq(taskId, stopReq.BuilderToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to stop transcription: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"stop":      stopResponse,
+		"timestamp": time.Now().UTC(),
+	})
+}
+
+func (s *RTTService) QueryRTT(c *gin.Context) {
+	taskId := c.Param("taskId")
+	builderToken := c.Query("builderToken")
+
+	if builderToken == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "builderToken is required"})
+		return
+	}
+
+	queryResponse, err := s.HandleQueryReq(taskId, builderToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query transcription status: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"query":     queryResponse,
+		"timestamp": time.Now().UTC(),
+	})
+}
