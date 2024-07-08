@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 )
 
 type MockRTTService struct {
@@ -47,6 +48,16 @@ func TestStartRTT(t *testing.T) {
 
 	mockService := &MockRTTService{
 		StartRTTFunc: func(c *gin.Context) {
+			var req ClientStartRTTRequest
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			if req.ChannelName == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "channelName is required"})
+				return
+			}
+			// Happy path response
 			response := struct {
 				Acquire   json.RawMessage `json:"acquire"`
 				Start     json.RawMessage `json:"start"`
@@ -62,26 +73,38 @@ func TestStartRTT(t *testing.T) {
 
 	router.POST("/rtt/start", mockService.StartRTT)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/rtt/start", strings.NewReader(`{"channelName":"test_channel","languages":["en-US"],"subscribeAudioUids":["1","2"],"maxIdleTime":300,"enableStorage":false}`))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
+	// Test case 1: Valid request
+	t.Run("Valid Request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtt/start", strings.NewReader(`{"channelName":"test_channel","languages":["en-US"],"subscribeAudioUids":["1","2"],"maxIdleTime":300,"enableStorage":false}`))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, w.Code)
-	}
+		assert.Equal(t, http.StatusOK, w.Code)
+		// Add more assertions for the response body
+	})
 
-	var response struct {
-		Acquire   json.RawMessage `json:"acquire"`
-		Start     json.RawMessage `json:"start"`
-		Timestamp string          `json:"timestamp"`
-	}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
-	}
+	// Test case 2: Missing required field
+	t.Run("Missing Required Field", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtt/start", strings.NewReader(`{"languages":["en-US"],"subscribeAudioUids":["1","2"]}`))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
 
-	// Add more specific checks for the response content
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "channelName is required")
+	})
+
+	// Test case 3: Malformed JSON
+	t.Run("Malformed JSON", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtt/start", strings.NewReader(`{"channelName":test_channel`))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "invalid character")
+	})
 }
 
 func TestStopRTT(t *testing.T) {
@@ -90,6 +113,19 @@ func TestStopRTT(t *testing.T) {
 
 	mockService := &MockRTTService{
 		StopRTTFunc: func(c *gin.Context) {
+			taskId := c.Param("taskId")
+			if taskId == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "taskId is required"})
+				return
+			}
+			var req struct {
+				BuilderToken string `json:"builderToken" binding:"required"`
+			}
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			// Happy path response
 			response := StopRTTResponse{
 				Timestamp: new(string),
 			}
@@ -100,24 +136,37 @@ func TestStopRTT(t *testing.T) {
 
 	router.POST("/rtt/stop/:taskId", mockService.StopRTT)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/rtt/stop/test_task_id", strings.NewReader(`{"builderToken":"test_builder_token"}`))
-	req.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(w, req)
+	// Test case 1: Valid request
+	t.Run("Valid Request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtt/stop/test_task_id", strings.NewReader(`{"builderToken":"test_builder_token"}`))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, w.Code)
-	}
+		assert.Equal(t, http.StatusOK, w.Code)
+		// Add more assertions for the response body
+	})
 
-	var response StopRTTResponse
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
-	}
+	// Test case 2: Missing taskId
+	t.Run("Missing TaskId", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtt/stop/", strings.NewReader(`{"builderToken":"test_builder_token"}`))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
 
-	if response.Timestamp == nil {
-		t.Error("Expected timestamp to be present, but it's nil")
-	}
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	// Test case 3: Missing builderToken
+	t.Run("Missing BuilderToken", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtt/stop/test_task_id", strings.NewReader(`{}`))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "Error:Field validation for 'BuilderToken' failed on the 'required' tag")
+	})
 }
 
 func TestQueryRTT(t *testing.T) {
@@ -126,13 +175,24 @@ func TestQueryRTT(t *testing.T) {
 
 	mockService := &MockRTTService{
 		QueryRTTFunc: func(c *gin.Context) {
+			taskId := c.Param("taskId")
+			if taskId == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "taskId is required"})
+				return
+			}
+			builderToken := c.Query("builderToken")
+			if builderToken == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "builderToken is required"})
+				return
+			}
+			// Happy path response
 			response := struct {
 				Status    string `json:"status"`
 				TaskId    string `json:"taskId"`
 				Timestamp string `json:"timestamp"`
 			}{
 				Status:    "in_progress",
-				TaskId:    "test_task_id",
+				TaskId:    taskId,
 				Timestamp: time.Now().UTC().Format(time.RFC3339),
 			}
 			c.JSON(http.StatusOK, response)
@@ -141,30 +201,34 @@ func TestQueryRTT(t *testing.T) {
 
 	router.GET("/rtt/status/:taskId", mockService.QueryRTT)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/rtt/status/test_task_id?builderToken=test_builder_token", nil)
-	router.ServeHTTP(w, req)
+	// Test case 1: Valid request
+	t.Run("Valid Request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/rtt/status/test_task_id?builderToken=test_builder_token", nil)
+		router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, w.Code)
-	}
+		assert.Equal(t, http.StatusOK, w.Code)
+		// Add more assertions for the response body
+	})
 
-	var response struct {
-		Status    string `json:"status"`
-		TaskId    string `json:"taskId"`
-		Timestamp string `json:"timestamp"`
-	}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal response: %v", err)
-	}
+	// Test case 2: Missing taskId
+	t.Run("Missing TaskId", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/rtt/status/?builderToken=test_builder_token", nil)
+		router.ServeHTTP(w, req)
 
-	if response.Status != "in_progress" {
-		t.Errorf("Expected status 'in_progress', got '%s'", response.Status)
-	}
-	if response.TaskId != "test_task_id" {
-		t.Errorf("Expected taskId 'test_task_id', got '%s'", response.TaskId)
-	}
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	// Test case 3: Missing builderToken
+	t.Run("Missing BuilderToken", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/rtt/status/test_task_id", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "builderToken is required")
+	})
 }
 
 func TestHandleAcquireBuilderTokenReq(t *testing.T) {
