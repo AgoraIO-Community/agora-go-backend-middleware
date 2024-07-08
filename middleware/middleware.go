@@ -45,7 +45,7 @@ func (m *Middleware) CORSMiddleware() gin.HandlerFunc {
 		}
 		// Set CORS headers to allow requests from the specified origin.
 		c.Header("Access-Control-Allow-Origin", origin)
-		c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type")
 		// Handle pre-flight OPTIONS requests.
 		if c.Request.Method == "OPTIONS" {

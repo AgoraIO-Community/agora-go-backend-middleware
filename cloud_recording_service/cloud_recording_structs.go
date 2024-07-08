@@ -282,8 +282,9 @@ type StorageConfig struct {
 
 // ExtensionParams adds further customization to the storage configuration, supporting specific features of the storage provider.
 type ExtensionParams struct {
-	SSE *string `json:"sse,omitempty"` // Server-side encryption option.
-	Tag *string `json:"tag,omitempty"` // Custom tag for identifying storage settings or operations.
+	SSE                *string `json:"sse,omitempty"`      // Server-side encryption option.
+	Tag                *string `json:"tag,omitempty"`      // Custom tag for identifying storage settings or operations.
+	EnableNTPtimestamp *bool   `json:"enableNTPtimestamp"` // Private Param for enabling subtitle sync in RTT
 }
 
 // RecordingConfig encapsulates all settings related to the recording process itself.

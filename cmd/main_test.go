@@ -47,6 +47,7 @@ func TestEnvironmentVariablesLoading(t *testing.T) {
 		"CUSTOMER_SECRET",
 		"AGORA_BASE_URL",
 		"AGORA_CLOUD_RECORDING_URL",
+		"AGORA_RTT_URL",
 		"STORAGE_VENDOR",
 		"STORAGE_REGION",
 		"STORAGE_BUCKET",

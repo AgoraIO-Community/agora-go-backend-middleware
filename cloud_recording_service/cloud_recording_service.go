@@ -101,13 +101,13 @@ func (s *CloudRecordingService) StartRecording(c *gin.Context) {
 
 	// Validate recording mode against a set list
 	validRecordingModes := []string{"individual", "mix", "web"}
-	if !Contains(validRecordingModes, recordingMode) {
+	if !s.ValidateRecordingMode(validRecordingModes, recordingMode) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid recording mode."})
 		return
 	}
 
 	// Generate a unique UID for this recording session
-	uid := generateUID()
+	uid := s.GenerateUID()
 
 	// Generate token for recording using token_service
 	tokenRequest := token_service.TokenRequest{
