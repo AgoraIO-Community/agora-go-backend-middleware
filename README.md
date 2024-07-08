@@ -16,24 +16,32 @@ cp .env.example .env
 go run cmd/main.go
 ```
 
-## Endpoints
+### Health Check
 
 - GET `/ping`
+  - Response: `{"message": "pong"}`
 
-### Token
+## Micro-Services & Endpoints
 
-- POST `token/getNew`
+For detailed API specifications, and curl command examples to test the API endpoints locally, please refer to the following pages:
+
+### Token Service
+
+`TokenService` holds the necessary configurations and dependencies for managing tokens.
+
+- [Endpoints](./DOCS/Endpoints/Token.md)
+- [Curl Examples](./DOCS/Local_Testing/Token.md)
 
 ### Cloud Recording
 
-- POST `/cloudrecording/start`
-- POST `/cloudrecording/stop`
-- GET `/cloudrecording/status`
-- POST `/cloudrecording/update/subscriber-list`
-- POST `/cloudrecording/update/layout`
+`CloudRecordingService` holds the necessary configurations and dependencies for managing cloud recording requests. This includes Cloud Storage for RTT Service
 
-### Real Time Transcription
+- [Endpoints](./DOCS/Endpoints/Cloud_Recording.md)
+- [Curl Examples](./DOCS/Local_Testing/Cloud_Recording.md)
 
-- POST `/rtt/start`
-- DELETE `/rtt/stop`
-- GET `/rtt/status/:taskId`
+### Real Time Transcription (RTT)
+
+`RTTService` holds all the necessary configurations and dependencies required for managing real-time transcription requests.
+
+- [Endpoints](./DOCS/Endpoints/Real_Time_Transcription.md)
+- [Curl Examples](./DOCS/Local_Testing/Real_Time_Transcription.md)
