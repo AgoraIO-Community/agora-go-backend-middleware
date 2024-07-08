@@ -53,17 +53,7 @@ func (s *RTTService) ValidateAndSetDefaults(clientStartReq *ClientStartRTTReques
 
 	defaultMaxIdleTime := 30 // Default max idle time
 
-	// Initialize default values if nil
-	if clientStartReq.ProfanityFilter == nil {
-		defaultFilter := false
-		clientStartReq.ProfanityFilter = &defaultFilter
-	}
-
-	if clientStartReq.Destinations == nil {
-		defaultDestinations := []string{"AgoraRTCDataStream"}
-		clientStartReq.Destinations = &defaultDestinations
-	}
-
+	// Check if nil or out of bounds, and set as default
 	if clientStartReq.MaxIdleTime == nil || *clientStartReq.MaxIdleTime < minSeconds || *clientStartReq.MaxIdleTime > maxSeconds {
 		clientStartReq.MaxIdleTime = &defaultMaxIdleTime
 	}
