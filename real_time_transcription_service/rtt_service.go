@@ -11,29 +11,44 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// RTTService struct holds all the necessary configurations and dependencies
+// required for managing real-time transcription services.
 type RTTService struct {
-	appID         string                      // The Agora app ID
-	baseURL       string                      // The base URL for the Agora cloud recording API
-	basicAuth     string                      // Middleware for handling requests
-	tokenService  *token_service.TokenService // Token service for generating tokens
-	storageConfig cloud_recording_service.StorageConfig
+	appID         string                                // Agora application ID to identify the application within Agora services.
+	baseURL       string                                // Base URL for the Agora cloud recording API where all API requests are sent.
+	basicAuth     string                                // Basic authentication credentials required for interacting with the Agora API.
+	tokenService  *token_service.TokenService           // Pointer to an instance of TokenService used to generate authentication tokens for Agora API requests.
+	storageConfig cloud_recording_service.StorageConfig // Configuration for storage options including directory structure and file naming.
 }
 
+// NewRTTService initializes a new instance of RTTService with the provided configurations.
+// It seeds the random number generator to ensure varied operational behavior.
+//
+// Parameters:
+//   - appID: The Agora application ID.
+//   - baseURL: Base URL for the API interactions.
+//   - basicAuth: Basic authentication credentials for the API.
+//   - tokenService: Token service instance for generating tokens.
+//   - storageConfig: Storage configuration detailing file and directory naming conventions.
+//
+// Returns:
+//   - A pointer to the newly created RTTService.
 func NewRTTService(appID string, baseURL string, basicAuth string, tokenService *token_service.TokenService, storageConfig cloud_recording_service.StorageConfig) *RTTService {
-
-	// Seed the random number generator with the current time
-	rand.Seed(time.Now().UnixNano())
-
-	// Return a new instance of the service
+	rand.Seed(time.Now().UnixNano()) // Ensure varied randomness in the application operations.
 	return &RTTService{
-		appID:         appID,         // The Agora app ID used to identify the application within Agora services.
-		baseURL:       baseURL,       // The base URL for the Agora cloud recording API where all API requests are sent.
-		basicAuth:     basicAuth,     // Basic authentication credentials required for interacting with the Agora API.
-		tokenService:  tokenService,  // Pointer to an instance of TokenService used to generate authentication tokens for Agora API requests.
-		storageConfig: storageConfig, // Configuration for storage options including directory structure and file naming.
+		appID:         appID,
+		baseURL:       baseURL,
+		basicAuth:     basicAuth,
+		tokenService:  tokenService,
+		storageConfig: storageConfig,
 	}
 }
 
+// RegisterRoutes sets up the API endpoints related to the real-time transcription service.
+// It creates a route group and registers individual routes for starting, stopping, and querying the transcription status.
+//
+// Parameters:
+//   - r: *gin.Engine - Gin engine instance to register routes.
 func (s *RTTService) RegisterRoutes(r *gin.Engine) {
 	// group route
 	api := r.Group("/rtt")
@@ -43,6 +58,11 @@ func (s *RTTService) RegisterRoutes(r *gin.Engine) {
 	api.GET("/status", s.QueryRTT)
 }
 
+// StartRTT handles the starting of the real-time transcription by binding JSON data from client requests,
+// validating and setting default values, acquiring necessary tokens, and making the start request.
+//
+// Parameters:
+//   - c: *gin.Context - Context instance containing HTTP request and response objects.
 func (s *RTTService) StartRTT(c *gin.Context) {
 	// Verify the client's request. If binding fails, returns an HTTP 400 error with the specific binding error message.
 	var clientStartReq ClientStartRTTRequest
@@ -51,7 +71,7 @@ func (s *RTTService) StartRTT(c *gin.Context) {
 		return
 	}
 
-	s.ValidateAndSetDefaults(&clientStartReq)
+	// s.ValidateAndSetDefaults(&clientStartReq) // Validate client request and set default values.
 
 	// Acquire Builder Token
 	acquireReq := AcquireBuilderTokenRequest{
@@ -63,16 +83,28 @@ func (s *RTTService) StartRTT(c *gin.Context) {
 		return
 	}
 
-	// Generate a unique UID for this recording session
-	uid := s.GenerateUID()
+	subscriberBotUid := s.GenerateUID() // Generate a unique identifier for the audio subscriber bot.
+	publisherBotUid := s.GenerateUID()  // Generate a unique identifier for the output bot.
 
-	// Generate token for recording using token_service
-	tokenRequest := token_service.TokenRequest{
+	// Generate subscriber token for rtt using token_service
+	subscriberBotTokenRequest := token_service.TokenRequest{
 		TokenType: "rtc",
 		Channel:   clientStartReq.ChannelName,
-		Uid:       uid,
+		Uid:       subscriberBotUid,
 	}
-	token, err := s.tokenService.GenRtcToken(tokenRequest)
+	subscriberBotToken, err := s.tokenService.GenRtcToken(subscriberBotTokenRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Generate publisher token for rtt using token_service
+	publisherBotTokenRequest := token_service.TokenRequest{
+		TokenType: "rtc",
+		Channel:   clientStartReq.ChannelName,
+		Uid:       subscriberBotUid,
+	}
+	publisherBotToken, err := s.tokenService.GenRtcToken(publisherBotTokenRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -80,63 +112,52 @@ func (s *RTTService) StartRTT(c *gin.Context) {
 
 	// Construct the start request
 	startRttRequest := StartRTTRequest{
-		Audio: Audio{
-			SubscribeSource: "AGORARTC",
-			AgoraRtcConfig: AgoraRtcConfig{
-				ChannelName:     clientStartReq.ChannelName,
-				UID:             uid,
-				Token:           token,
-				ChannelType:     "LIVE_TYPE",
-				SubscribeConfig: SubscribeConfig{},
-				MaxIdleTime:     *clientStartReq.MaxIdleTime,
-			},
+		Languages:   []string{},
+		MaxIdleTime: *clientStartReq.MaxIdleTime,
+		RTCConfig: RTCConfig{
+			ChannelName:        clientStartReq.ChannelName,
+			SubBotUID:          subscriberBotUid,
+			SubBotToken:        &subscriberBotToken,
+			PubBotUID:          publisherBotUid,
+			PubBotToken:        &publisherBotToken,
+			SubscribeAudioUIDs: clientStartReq.SubscribeAudioUIDs,
+			CryptionMode:       clientStartReq.CryptionMode,
+			Secret:             clientStartReq.Secret,
+			Salt:               clientStartReq.Salt,
 		},
-		Config: Config{
-			Features: []string{"RECOGNIZE"},
-			RecognizeConfig: RecognizeConfig{
-				Language:        "",
-				Model:           "Model",
-				ProfanityFilter: clientStartReq.ProfanityFilter,
-				Output: Output{
-					Destinations:       *clientStartReq.Destinations,
-					AgoraRTCDataStream: AgoraRTCDataStream{},
-				},
-			},
-		},
+		TranslateConfig: clientStartReq.TranslateConfig,
 	}
 
 	// If storage is in destinations list, add storage config
-	if s.Contains(clientStartReq.Destinations, "Storage") {
+	if clientStartReq.EnableStorage != nil && *clientStartReq.EnableStorage {
 		// Add dynamic directory structure ChannelName/YYYYMMDD/HHMMSS
 		currentTimeUTC := time.Now().UTC()
 		dateStr := currentTimeUTC.Format("20060102")
 		hrsMinSecStr := currentTimeUTC.Format("150405")
 		s.storageConfig.FileNamePrefix = &[]string{strings.ReplaceAll(clientStartReq.ChannelName, "-", ""), dateStr, hrsMinSecStr}
-		// set cloud storage in request
-		startRttRequest.Config.RecognizeConfig.Output.CloudStorage = &[]CloudStorage{
-			{Format: "HLS", StorageConfig: s.storageConfig},
-		}
-	}
 
-	// Enable for subtitle sync
-	if clientStartReq.EnableNTPtimestamp != nil {
-		startRttRequest.PrivateParams.EnableNTPtimestamp = *clientStartReq.EnableNTPtimestamp
+		// Enable subtitle sync
+		if clientStartReq.EnableNTPtimestamp != nil && *clientStartReq.EnableNTPtimestamp {
+			s.storageConfig.ExtensionParams.EnableNTPtimestamp = clientStartReq.EnableNTPtimestamp
+		}
+		// set cloud storage in request
+		startRttRequest.CaptionConfig.Storage = s.storageConfig
 	}
 
 	// Make the Start Request to Agora Endpoint
 	startResponse, err := s.HandleStartReq(startRttRequest, builderToken)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to acquire resource: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transcription: " + err.Error()})
 		return
 	}
 
-	// Return Resource ID and Recording ID
+	// Return acquire and start responses
 	c.JSON(http.StatusOK, gin.H{
 		"acquire":   acquireResponse,
 		"start":     startResponse,
 		"timestamp": time.Now().UTC(),
 	})
-
 }
+
 func (s *RTTService) StopRTT(c *gin.Context)  {}
 func (s *RTTService) QueryRTT(c *gin.Context) {}
