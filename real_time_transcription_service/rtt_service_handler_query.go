@@ -35,7 +35,7 @@ func (s *RTTService) HandleQueryReq(taskId string, builderToken string) (json.Ra
 	}
 
 	// Parse the response body into a struct to validate the response
-	var response StartRTTResponse
+	var response AgpraRTTResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response: %v", err)
