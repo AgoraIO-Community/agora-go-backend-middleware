@@ -18,10 +18,22 @@ go run cmd/main.go
 
 ## Endpoints
 
-- [GET /ping]()
-- [POST /token/getNew]()
-- [POST /cloudrecording/start]()
-- [POST /cloudrecording/stop]()
-- [GET /cloudrecording/status]()
-- [POST /cloudrecording/update/subscriber-list]()
-- [POST /cloudrecording/update/layout]()
+- GET `/ping`
+
+### Token
+
+- POST `token/getNew`
+
+### Cloud Recording
+
+- POST `/cloudrecording/start`
+- POST `/cloudrecording/stop`
+- GET `/cloudrecording/status`
+- POST `/cloudrecording/update/subscriber-list`
+- POST `/cloudrecording/update/layout`
+
+### Real Time Transcription
+
+- POST `/rtt/start`
+- DELETE `/rtt/stop`
+- GET `/rtt/status/:taskId`
