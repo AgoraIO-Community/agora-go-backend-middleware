@@ -50,8 +50,6 @@ func (s *RTTService) makeRequest(method, url string, body interface{}) ([]byte, 
 			return nil, fmt.Errorf("error creating request: %v", err)
 		}
 
-		// Set the 'Content-Type' header for requests that include a body.
-		req.Header.Set("Content-Type", "application/json")
 	} else {
 		// Return an error if a body is expected for non-GET requests but not provided.
 		return nil, fmt.Errorf("request body missing for method %s", method)
@@ -59,6 +57,9 @@ func (s *RTTService) makeRequest(method, url string, body interface{}) ([]byte, 
 
 	// Set the 'Authorization' header for all requests.
 	req.Header.Set("Authorization", s.basicAuth)
+
+	// Set the 'Content-Type' header as it's required by all endpoints.
+	req.Header.Set("Content-Type", "application/json")
 
 	// Create and configure an HTTP client with a timeout.
 	client := &http.Client{Timeout: time.Second * 10}
