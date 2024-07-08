@@ -35,7 +35,7 @@ type StartRTTRequest struct {
 	Languages       []string         `json:"languages"`                 // The language(s) to transcribe
 	MaxIdleTime     int              `json:"maxIdleTime"`               // If there is no audio stream in the channel for more than this time, the RTT Task will stop automatically.
 	RTCConfig       RTCConfig        `json:"rtcConfig"`                 // The RTC settings for the audio and data bots
-	CaptionConfig   *CaptionConfig   `json:"captionConfig"`             // The cloud recording configuration
+	CaptionConfig   *CaptionConfig   `json:"captionConfig,omitempty"`   // The cloud recording configuration
 	TranslateConfig *TranslateConfig `json:"translateConfig,omitempty"` // The settings for real-time translation
 }
 
