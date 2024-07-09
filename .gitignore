@@ -26,3 +26,7 @@ go.work.sum
 
 # Environment variable
 .env
+
+# go output
+coverage.*
+build_marker
