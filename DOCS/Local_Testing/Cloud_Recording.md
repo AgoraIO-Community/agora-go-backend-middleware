@@ -1,6 +1,6 @@
 # Cloud Recording API
 
-This document provides details about the Cloud Recording API endpoints with curl examples for testing.
+This document provides curl examples for testing the backend's Cloud Recording API endpoints.
 
 ## Start Recording
 

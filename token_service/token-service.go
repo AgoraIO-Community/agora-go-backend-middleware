@@ -5,19 +5,16 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/AgoraIO-Community/agora-go-backend-middleware/middleware"
 	"github.com/gin-gonic/gin"
 )
 
 // TokenService represents the main application token service.
 // It holds the necessary configurations and dependencies for managing tokens.
 type TokenService struct {
-	Server         *http.Server           // The HTTP server for the application
-	Sigint         chan os.Signal         // Channel to handle OS signals, such as Ctrl+C
-	appID          string                 // The Agora app ID
-	appCertificate string                 // The Agora app certificate
-	allowOrigin    string                 // The allowed origin for CORS
-	middleware     *middleware.Middleware // Middleware for handling requests
+	Server         *http.Server   // The HTTP server for the application
+	Sigint         chan os.Signal // Channel to handle OS signals, such as Ctrl+C
+	appID          string         // The Agora app ID
+	appCertificate string         // The Agora app certificate
 }
 
 // TokenRequest is a struct representing the JSON payload structure for token generation requests.
@@ -49,12 +46,10 @@ type TokenRequest struct {
 //
 // Notes:
 //   - The necessary environment variables should be set before initializing the TokenService.
-func NewTokenService(appIDEnv string, appCertEnv string, corsAllowOrigin string) *TokenService {
+func NewTokenService(appIDEnv string, appCertEnv string) *TokenService {
 	return &TokenService{
 		appID:          appIDEnv,
 		appCertificate: appCertEnv,
-		allowOrigin:    corsAllowOrigin,
-		middleware:     middleware.NewMiddleware(corsAllowOrigin),
 	}
 }
 

@@ -1,4 +1,4 @@
-package middleware
+package http_headers
 
 import (
 	"net/http"
@@ -8,18 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Middleware holds configurations for handling requests, such as CORS settings.
-type Middleware struct {
+// HttpHeaders holds configurations for handling requests, such as CORS settings.
+type HttpHeaders struct {
 	AllowOrigin string // List of origins allowed to access the resources.
 }
 
-// NewMiddleware initializes and returns a new Middleware object with specified CORS settings.
-func NewMiddleware(allowOrigin string) *Middleware {
-	return &Middleware{AllowOrigin: allowOrigin}
+// NewHttpHeaders initializes and returns a new Middleware object with specified CORS settings.
+func NewHttpHeaders(allowOrigin string) *HttpHeaders {
+	return &HttpHeaders{AllowOrigin: allowOrigin}
 }
 
 // NoCache sets HTTP headers to prevent client-side caching of responses.
-func (m *Middleware) NoCache() gin.HandlerFunc {
+func (m *HttpHeaders) NoCache() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Set multiple cache-related headers to ensure responses are not cached.
 		c.Header("Cache-Control", "private, no-cache, no-store, must-revalidate")
@@ -28,9 +28,9 @@ func (m *Middleware) NoCache() gin.HandlerFunc {
 	}
 }
 
-// CORSMiddleware adds CORS (Cross-Origin Resource Sharing) headers to responses and handles pre-flight requests.
+// CORShttpHeaders adds CORS (Cross-Origin Resource Sharing) headers to responses and handles pre-flight requests.
 // It allows web applications at different domains to interact more securely.
-func (m *Middleware) CORSMiddleware() gin.HandlerFunc {
+func (m *HttpHeaders) CORShttpHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 		// Check if the origin of the request is allowed to access the resource.
@@ -57,7 +57,7 @@ func (m *Middleware) CORSMiddleware() gin.HandlerFunc {
 }
 
 // isOriginAllowed checks whether the provided origin is in the list of allowed origins.
-func (m *Middleware) isOriginAllowed(origin string) bool {
+func (m *HttpHeaders) isOriginAllowed(origin string) bool {
 	if m.AllowOrigin == "*" {
 		// Allow any origin if the configured setting is "*".
 		return true
@@ -75,7 +75,7 @@ func (m *Middleware) isOriginAllowed(origin string) bool {
 
 // TimestampMiddleware adds a timestamp header to responses.
 // This can be useful for debugging and logging purposes to track when a response was generated.
-func (m *Middleware) TimestampMiddleware() gin.HandlerFunc {
+func (m *HttpHeaders) TimestampMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next() // Proceed to the next middleware/handler.
 
