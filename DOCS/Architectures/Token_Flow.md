@@ -35,8 +35,8 @@ flowchart LR
     end
 
     A <-->|Request/Response| B
-    B <-->|/token/getNew| C
-    C <--> F1
+    B <-->|/token| C
+    C <--> |/getNew| F1
     F1 -->|TokenType: RTC | G1
     F1 -->|TokenType: RTM | G2
     F1 -->|TokenType: CHAT | G3
