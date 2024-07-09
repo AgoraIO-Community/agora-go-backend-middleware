@@ -2,8 +2,8 @@ before:
   hooks:
     - go mod tidy
 builds:
-  - binary: agora-token-service
-    id: agora-token-service
+  - binary: gora-backend-middleware
+    id: gora-backend-middleware
     main: ./cmd/main.go
     goos:
       - windows
