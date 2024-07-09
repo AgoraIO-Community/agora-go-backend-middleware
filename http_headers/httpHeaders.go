@@ -1,4 +1,4 @@
-package httpHeaders
+package http_headers
 
 import (
 	"net/http"

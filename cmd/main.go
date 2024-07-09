@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/cloud_recording_service"
-	httpHeaders "github.com/AgoraIO-Community/agora-go-backend-middleware/http_headers"
+	"github.com/AgoraIO-Community/agora-go-backend-middleware/http_headers"
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/real_time_transcription_service"
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/token_service"
 	"github.com/gin-gonic/gin"
@@ -72,7 +72,7 @@ func main() {
 
 	// Set up the Gin HTTP router with middleware for CORS, caching, and timestamp.
 	router := gin.Default()
-	var httpHeaders = httpHeaders.NewHttpHeaders(corsAllowOrigin)
+	var httpHeaders = http_headers.NewHttpHeaders(corsAllowOrigin)
 	router.Use(httpHeaders.NoCache())
 	router.Use(httpHeaders.CORShttpHeaders())
 	router.Use(httpHeaders.TimestampMiddleware())
