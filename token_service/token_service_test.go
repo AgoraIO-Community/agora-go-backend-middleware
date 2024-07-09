@@ -16,7 +16,6 @@ func NewTestTokenService() *TokenService {
 	return &TokenService{
 		appID:          "6ce46dd303d54056a52f9a34c13c547e",
 		appCertificate: "77be7e16f7482cef9fe796205b85831e",
-		allowOrigin:    "*",
 	}
 }
 

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/cloud_recording_service"
-	"github.com/AgoraIO-Community/agora-go-backend-middleware/middleware"
+	httpHeaders "github.com/AgoraIO-Community/agora-go-backend-middleware/http_headers"
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/real_time_transcription_service"
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/token_service"
 	"github.com/gin-gonic/gin"
@@ -72,15 +72,15 @@ func main() {
 
 	// Set up the Gin HTTP router with middleware for CORS, caching, and timestamp.
 	router := gin.Default()
-	var middleware = middleware.NewMiddleware(corsAllowOrigin)
-	router.Use(middleware.NoCache())
-	router.Use(middleware.CORSMiddleware())
-	router.Use(middleware.TimestampMiddleware())
+	var httpHeaders = httpHeaders.NewHttpHeaders(corsAllowOrigin)
+	router.Use(httpHeaders.NoCache())
+	router.Use(httpHeaders.CORShttpHeaders())
+	router.Use(httpHeaders.TimestampMiddleware())
 
 	// get basicAuth key
 	basicAuthKey := getBasicAuth(customerIDEnv, customerSecretEnv)
 	// Initialize token and cloud recording services.
-	tokenService := token_service.NewTokenService(appIDEnv, appCertEnv, corsAllowOrigin)
+	tokenService := token_service.NewTokenService(appIDEnv, appCertEnv)
 	cloudRecordingService := cloud_recording_service.NewCloudRecordingService(appIDEnv, cloudRecordingUrl, basicAuthKey, tokenService, storageConfig)
 	realTimeTranscriptionService := real_time_transcription_service.NewRTTService(appIDEnv, realTimeTranscriptionUrl, basicAuthKey, tokenService, storageConfig)
 
