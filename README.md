@@ -23,12 +23,45 @@ go run cmd/main.go
 
 ## Micro-Services & Endpoints
 
+```mermaid
+flowchart LR
+    subgraph Client
+        A[HTTP Client]
+    end
+
+    subgraph "Gin Web Server"
+        B[Router]
+    end
+
+    subgraph "Core Services"
+        direction TB
+        C[Token Service]
+        D[Cloud Recording Service]
+        E[Real-Time Transcription Service]
+    end
+
+    subgraph "External"
+        K[Agora RESTful API]
+    end
+
+    A <-->|Request/Response| B
+    B <-->|/token| C
+    B <-->|/cloud_recording| D
+    B <-->|/rtt| E
+    D & E <-.->|API Calls| K
+
+    classDef request fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef response fill:#bbf,stroke:#333,stroke-width:2px;
+```
+
 For detailed API specifications, and curl command examples to test the API endpoints locally, please refer to the following pages:
 
 ### Token Service
 
 `TokenService` holds the necessary configurations and dependencies for managing tokens.
 
+- [Flow](./DOCS/Architectures/Token_Flow.md)
+- [Entity Relationships](./DOCS/Architectures/Token_Entity.md)
 - [Endpoints](./DOCS/Endpoints/Token.md)
 - [Curl Examples](./DOCS/Local_Testing/Token.md)
 
@@ -36,6 +69,8 @@ For detailed API specifications, and curl command examples to test the API endpo
 
 `CloudRecordingService` holds the necessary configurations and dependencies for managing cloud recording requests. This includes Cloud Storage for RTT Service
 
+- [Flow](./DOCS/Architectures/Cloud_Recording_Flow.md)
+- [Entity Relationships](./DOCS/Architectures/Cloud_Recording_Entity.md)
 - [Endpoints](./DOCS/Endpoints/Cloud_Recording.md)
 - [Curl Examples](./DOCS/Local_Testing/Cloud_Recording.md)
 
@@ -43,5 +78,7 @@ For detailed API specifications, and curl command examples to test the API endpo
 
 `RTTService` holds all the necessary configurations and dependencies required for managing real-time transcription requests.
 
+- [Flow](./DOCS/Architectures/Real_Time_Transcription_Flow.md)
+- [Entity Relationships](./DOCS/Architectures/Real_Time_Transcription_Entity.md)
 - [Endpoints](./DOCS/Endpoints/Real_Time_Transcription.md)
 - [Curl Examples](./DOCS/Local_Testing/Real_Time_Transcription.md)
