@@ -1,5 +1,3 @@
-/** token_handlers.go */
-
 package token_service
 
 import (
