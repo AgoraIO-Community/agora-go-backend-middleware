@@ -1,6 +1,6 @@
 # Real-Time Transcription (RTT) API
 
-This document provides details about the Real-Time Transcription API endpoints with curl examples for testing.
+This document provides curl examples for testing the backend's Real-Time Transcription API endpoints.
 
 ## Start RTT
 

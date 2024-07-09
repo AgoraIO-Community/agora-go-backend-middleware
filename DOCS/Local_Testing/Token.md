@@ -1,6 +1,6 @@
 # Token Generation API
 
-This document provides details about the Token Generation API endpoints with curl examples for testing.
+This document provides curl examples for testing the backend's Token Generation API endpoints.
 
 ## Generate Token
 
