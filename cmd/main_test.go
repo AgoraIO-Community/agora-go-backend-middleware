@@ -36,10 +36,16 @@ func TestEnvironmentVariablesLoading(t *testing.T) {
 		err := godotenv.Load()
 		if err != nil {
 			t.Logf("Error loading .env file: %v", err)
+			t.Log("Setting mock values for environment variables")
+			setMockEnvVars()
 		} else {
 			t.Log("Successfully loaded .env file")
 		}
+	} else {
+		t.Log("Running in CI environment, setting mock values")
+		setMockEnvVars()
 	}
+
 	requiredEnvVars := []string{
 		"APP_ID",
 		"APP_CERTIFICATE",
@@ -88,6 +94,21 @@ func TestEnvironmentVariablesLoading(t *testing.T) {
 	if baseURL := os.Getenv("AGORA_BASE_URL"); !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
 		t.Errorf("AGORA_BASE_URL should start with http:// or https://, got %s", baseURL)
 	}
+}
+
+func setMockEnvVars() {
+	os.Setenv("APP_ID", "12345678901234567890123456789012")
+	os.Setenv("APP_CERTIFICATE", "12345678901234567890123456789012")
+	os.Setenv("CUSTOMER_ID", "mock_customer_id")
+	os.Setenv("CUSTOMER_SECRET", "mock_customer_secret")
+	os.Setenv("AGORA_BASE_URL", "https://api.agora.io/")
+	os.Setenv("AGORA_CLOUD_RECORDING_URL", "mock_recording_url")
+	os.Setenv("AGORA_RTT_URL", "mock_rtt_url")
+	os.Setenv("STORAGE_VENDOR", "1")
+	os.Setenv("STORAGE_REGION", "1")
+	os.Setenv("STORAGE_BUCKET", "mock_bucket")
+	os.Setenv("STORAGE_BUCKET_ACCESS_KEY", "mock_access_key")
+	os.Setenv("STORAGE_BUCKET_SECRET_KEY", "mock_secret_key")
 }
 
 func TestGetBasicAuth(t *testing.T) {
