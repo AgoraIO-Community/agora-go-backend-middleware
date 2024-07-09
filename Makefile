@@ -53,5 +53,25 @@ dev: check-env
 test:
 	go test ./...
 
+test-verbose:
+	go test -v ./...
+
+test-coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+
+test-no-cache:
+	go test -count=1 ./...
+
+test-coverage-func:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+
+test-race:
+	go test -race ./...
+
+benchmark:
+	go test -bench=. ./...
+
 lint:
 	golangci-lint run
