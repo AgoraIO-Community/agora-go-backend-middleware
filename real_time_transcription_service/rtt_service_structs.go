@@ -100,6 +100,7 @@ func (s *AgpraRTTResponse) SetTimestamp(timestamp string) {
 // StopRTTResponse represents the response received from the Agora server after successfully starting a recording.
 // It includes the identifiers of the recording session along with an optional timestamp.
 type StopRTTResponse struct {
+	Status    string  `json:"status"`
 	Timestamp *string `json:"timestamp,omitempty"` // Optional timestamp for when the recording was started.
 }
 
