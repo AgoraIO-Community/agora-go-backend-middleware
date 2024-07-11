@@ -113,14 +113,10 @@ type Timestampable interface {
 }
 
 // Agora RTMP Push Response structs
-type RtmpPushResponse struct {
+type StartRtmpResponse struct {
 	Converter ConverterResponse `json:"converter"`
 	Fields    string            `json:"fields"`
 	Timestamp *string           `json:"timestamp,omitempty"` // Optional timestamp for when the recording was started.
-}
-
-func (s *RtmpPushResponse) SetTimestamp(timestamp string) {
-	s.Timestamp = &timestamp
 }
 
 type ConverterResponse struct {
@@ -128,4 +124,17 @@ type ConverterResponse struct {
 	CreateTs int64  `json:"createTs"`
 	UpdateTs int64  `json:"updateTs"`
 	State    string `json:"state"`
+}
+
+func (s *StartRtmpResponse) SetTimestamp(timestamp string) {
+	s.Timestamp = &timestamp
+}
+
+type StopRtmpResponse struct {
+	Status    string  `json:"status"`
+	Timestamp *string `json:"timestamp,omitempty"` // Optional timestamp for when the recording was started.
+}
+
+func (s *StopRtmpResponse) SetTimestamp(timestamp string) {
+	s.Timestamp = &timestamp
 }

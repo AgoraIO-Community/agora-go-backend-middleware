@@ -40,7 +40,7 @@ func (s *RtmpService) HandleStartPushReq(startReq RtmpPushRequest, region string
 	}
 
 	// Parse the response body into a struct to validate the response
-	var response RtmpPushResponse
+	var response StartRtmpResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response: %v", err)
