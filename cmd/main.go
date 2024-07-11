@@ -107,7 +107,8 @@ func main() {
 
 		if rtmpURLExists {
 			// Init RTMP Service
-			rtmpService := rtmp_service.NewRtmpService(appIDEnv, baseURLEnv, rtmpURLEnv, basicAuthKey, tokenService)
+			rtmpURL := strings.Replace(rtmpURLEnv, "{appId}", appIDEnv, 1) //replace the place-holder value with appID
+			rtmpService := rtmp_service.NewRtmpService(appIDEnv, baseURLEnv, rtmpURL, basicAuthKey, tokenService)
 			rtmpService.RegisterRoutes(router)
 		}
 	} else {
