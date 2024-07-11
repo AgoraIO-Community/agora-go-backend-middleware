@@ -9,11 +9,18 @@ type MediaPushRequest struct {
 }
 
 type Converter struct {
-	Name               *string          `json:"name,omitempty"`
-	TranscodeOptions   TranscodeOptions `json:"transcodeOptions"`
-	RtmpUrl            string           `json:"rtmpUrl"`
-	IdleTimeOut        *int             `json:"idleTimeOut,omitempty"`
-	JitterBufferSizeMs *int             `json:"jitterBufferSizeMs,omitempty"`
+	Name               *string           `json:"name,omitempty"`
+	TranscodeOptions   *TranscodeOptions `json:"transcodeOptions,omitempty"`
+	RawOptions         *RawOptions       `json:"rawOptions,omitempty"`
+	RtmpUrl            string            `json:"rtmpUrl"`
+	IdleTimeOut        *int              `json:"idleTimeOut,omitempty"`
+	JitterBufferSizeMs *int              `json:"jitterBufferSizeMs,omitempty"`
+}
+
+type RawOptions struct {
+	RtcChannel   string `json:"rtcChannel"`
+	Token        string `json:"token"`
+	RtcStreamUid string `json:"rtcStreamUid"`
 }
 
 type TranscodeOptions struct {
