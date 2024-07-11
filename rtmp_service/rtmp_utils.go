@@ -19,9 +19,9 @@ func (s *RtmpService) GenerateUID() string {
 	return strconv.Itoa(uid)
 }
 
-// ValidateRecordingMode checks if a specific string is present within a slice of strings.
+// ValidateRegion checks if a specific string is present within a slice of strings.
 // This is useful for determining if a particular item exists within a list.
-func (s *RtmpService) ValidateRecordingMode(valideModes []string, modeToCheck string) bool {
+func (s *RtmpService) ValidateRegion(valideModes []string, modeToCheck string) bool {
 	for _, mode := range valideModes {
 		if mode == modeToCheck {
 			return true
