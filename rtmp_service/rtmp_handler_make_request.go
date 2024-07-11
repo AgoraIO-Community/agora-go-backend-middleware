@@ -15,7 +15,7 @@ import (
 // Parameters:
 //   - method: string - The HTTP method (e.g., "GET", "POST") to be used for making the request.
 //   - url: string - The endpoint URL to which the request is sent.
-//   - body: interface{} (optional) - The payload for the request, required for methods like "POST" and "PUT".
+//   - body: interface{} (optional) - The payload for the request, required for methods like "POST" and "PATCH".
 //
 // Returns:
 //   - []byte: The raw response body received from the server.
