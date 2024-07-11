@@ -2,6 +2,7 @@ package rtmp_service
 
 import (
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/token_service"
@@ -51,6 +52,18 @@ func NewRtmpService(appID string, baseURL string, rtmpURL string, basicAuth stri
 	}
 }
 
+// Middleware to verify X-Request-ID header
+func verifyRequestID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetHeader("X-Request-ID") == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "X-Request-ID header is required"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
 // RegisterRoutes registers the routes for the RtmpService.
 // It sets up the API endpoints for request handling.
 //
@@ -66,7 +79,8 @@ func NewRtmpService(appID string, baseURL string, rtmpURL string, basicAuth stri
 func (s *RtmpService) RegisterRoutes(r *gin.Engine) {
 	// group route for RTMP
 	api := r.Group("/rtmp")
-
+	// make sure each request containers the X-Request-ID
+	api.Use(verifyRequestID())
 	// group route for push operations
 	pushAPI := api.Group("/push")
 	// push routes
@@ -82,7 +96,74 @@ func (s *RtmpService) RegisterRoutes(r *gin.Engine) {
 
 // StartPush handles the starting of an RTMP push.
 // It processes the request to start pushing the media stream to the specified RTMP URL.
-func (s *RtmpService) StartPush(c *gin.Context) {}
+func (s *RtmpService) StartPush(c *gin.Context) {
+	// Verify the client's request. If binding fails, returns an HTTP 400 error with the specific binding error message.
+	var clientStartReq ClientStartRtmpRequest
+	if err := c.ShouldBindJSON(&clientStartReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate recording mode against a set list
+	validRegions := []string{"na", "eu", "ap", "cn"}
+	if !s.ValidateRegion(validRegions, clientStartReq.Region) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified."})
+		return
+	}
+
+	// Generate a unique UID for this rtmp push
+	uid := s.GenerateUID()
+
+	// Generate token for recording using token_service
+	tokenRequest := token_service.TokenRequest{
+		TokenType: "rtc",
+		Channel:   clientStartReq.RtcChannel,
+		Uid:       uid,
+	}
+	token, err := s.tokenService.GenRtcToken(tokenRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Assemble rtmp client request
+	rtmpClientReq := RtmpPushRequest{
+		Converter: Converter{
+			Name:               clientStartReq.ConverterName,
+			RtmpUrl:            clientStartReq.StreamUrl + clientStartReq.StreamKey,
+			IdleTimeOut:        clientStartReq.IdleTimeOut,
+			JitterBufferSizeMs: clientStartReq.JitterBufferSizeMs,
+		},
+	}
+
+	if clientStartReq.UseTranscoding {
+		// set rtmp request to use TranscodeOptions
+		rtmpClientReq.Converter.TranscodeOptions = &TranscodeOptions{
+			RtcChannel:   clientStartReq.RtcChannel,
+			Token:        token,
+			AudioOptions: clientStartReq.AudioOptions,
+			VideoOptions: clientStartReq.VideoOptions,
+		}
+	} else {
+		// set rtmp request to use RawOptions
+		rtmpClientReq.Converter.RawOptions = &RawOptions{
+			RtcChannel:   clientStartReq.RtcChannel,
+			Token:        token,
+			RtcStreamUid: *clientStartReq.RtcStreamUid,
+		}
+	}
+
+	// Start RTMP
+	response, err := s.HandleStartPushReq(rtmpClientReq, clientStartReq.Region, c.GetHeader("X-Request-ID"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start recording: " + err.Error()})
+		return
+	}
+
+	// Return the wrapped Agora response
+	c.Data(http.StatusOK, "application/json", response)
+
+}
 
 // StopPush handles the stopping of an RTMP push.
 // It processes the request to stop pushing the media stream to the specified RTMP URL.
