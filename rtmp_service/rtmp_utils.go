@@ -21,9 +21,10 @@ func (s *RtmpService) GenerateUID() string {
 
 // ValidateRegion checks if a specific string is present within a slice of strings.
 // This is useful for determining if a particular item exists within a list.
-func (s *RtmpService) ValidateRegion(valideModes []string, modeToCheck string) bool {
-	for _, mode := range valideModes {
-		if mode == modeToCheck {
+func (s *RtmpService) ValidateRegion(regionToCheck string) bool {
+	validRegions := []string{"na", "eu", "ap", "cn"}
+	for _, region := range validRegions {
+		if region == regionToCheck {
 			return true
 		}
 	}
