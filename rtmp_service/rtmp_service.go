@@ -4,16 +4,18 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/AgoraIO-Community/agora-go-backend-middleware/token_service"
 	"github.com/gin-gonic/gin"
 )
 
 // RtmpService represents the media push/pull service.
 // It holds the necessary configurations and dependencies for managing Media Push and Pull with Agora Channels.
 type RtmpService struct {
-	appID     string // The Agora app ID used to identify the application within Agora services.
-	baseURL   string // The base URL for the Agora API where all API requests are sent.
-	rtmpURL   string // The URL path for the Agora RTMP converter endpoint.
-	basicAuth string // Basic authentication credentials required for interacting with the Agora API.
+	appID        string                      // The Agora app ID used to identify the application within Agora services.
+	baseURL      string                      // The base URL for the Agora API where all API requests are sent.
+	rtmpURL      string                      // The URL path for the Agora RTMP converter endpoint.
+	basicAuth    string                      // Basic authentication credentials required for interacting with the Agora API.
+	tokenService *token_service.TokenService // Pointer to an instance of TokenService used to generate authentication tokens for Agora API requests.
 }
 
 // NewRtmpService returns a RtmpService pointer with all configurations set.
@@ -34,17 +36,18 @@ type RtmpService struct {
 //
 // Notes:
 //   - Logs a fatal error and exits if any required environment variables are missing.
-func NewRtmpService(appID string, baseURL string, rtmpURL string, basicAuth string) *RtmpService {
+func NewRtmpService(appID string, baseURL string, rtmpURL string, basicAuth string, tokenService *token_service.TokenService) *RtmpService {
 
 	// Seed the random number generator with the current time
 	rand.Seed(time.Now().UnixNano())
 
 	// Return a new instance of the service
 	return &RtmpService{
-		appID:     appID,     // The Agora app ID used to identify the application within Agora services.
-		baseURL:   baseURL,   // The base URL for the Agora API where all API requests are sent.
-		rtmpURL:   rtmpURL,   // The URL path for the Agora RTMP converter endpoint.
-		basicAuth: basicAuth, // Basic authentication credentials required for interacting with the Agora API.
+		appID:        appID,        // The Agora app ID used to identify the application within Agora services.
+		baseURL:      baseURL,      // The base URL for the Agora API where all API requests are sent.
+		rtmpURL:      rtmpURL,      // The URL path for the Agora RTMP converter endpoint.
+		basicAuth:    basicAuth,    // Basic authentication credentials required for interacting with the Agora API.
+		tokenService: tokenService, // Pointer to an instance of TokenService used to generate authentication tokens for Agora API requests.
 	}
 }
 
