@@ -1,10 +1,21 @@
 package rtmp_service
 
-type ClientStartRequest struct {
+type ClientStartRtmpRequest struct {
+	ConverterName      *string       `json:"converterName,omitempty"`
+	RtcChannel         string        `json:"rtcChannel"`
+	StreamUrl          string        `json:"streamUrl"`
+	StreamKey          string        `json:"streamKey"`
+	Region             string        `json:"region"`
+	UseTranscoding     bool          `json:"useTranscoding"`
+	RtcStreamUid       *string       `json:"rtcStreamUid,omitempty"`
+	AudioOptions       *AudioOptions `json:"audioOptions,omitempty"`
+	VideoOptions       *VideoOptions `json:"videoOptions,omitempty"`
+	IdleTimeOut        *int          `json:"idleTimeOut,omitempty"`
+	JitterBufferSizeMs *int          `json:"jitterBufferSizeMs,omitempty"`
 }
 
 // Agora Media Push Request structs
-type MediaPushRequest struct {
+type RtmpPushRequest struct {
 	Converter Converter `json:"converter"`
 }
 
@@ -95,11 +106,21 @@ type Sink struct {
 	Type int `json:"type"`
 }
 
-// Agora Media Push Response structs
+// Timestampable is an interface that allows struct types to receive a timestamp.
+// Implementing this interface ensures that a timestamp can be set on the object, primarily for auditing or tracking purposes.
+type Timestampable interface {
+	SetTimestamp(timestamp string)
+}
 
-type MediaPushResponse struct {
+// Agora RTMP Push Response structs
+type RtmpPushResponse struct {
 	Converter ConverterResponse `json:"converter"`
 	Fields    string            `json:"fields"`
+	Timestamp *string           `json:"timestamp,omitempty"` // Optional timestamp for when the recording was started.
+}
+
+func (s *RtmpPushResponse) SetTimestamp(timestamp string) {
+	s.Timestamp = &timestamp
 }
 
 type ConverterResponse struct {
