@@ -1,9 +1,9 @@
-package media_service
+package rtmp_service
 
 type ClientStartRequest struct {
 }
 
-// Agora Request structs
+// Agora Media Push Request structs
 type MediaPushRequest struct {
 	Converter Converter `json:"converter"`
 }
@@ -88,7 +88,7 @@ type Sink struct {
 	Type int `json:"type"`
 }
 
-// Response structs
+// Agora Media Push Response structs
 
 type MediaPushResponse struct {
 	Converter ConverterResponse `json:"converter"`
