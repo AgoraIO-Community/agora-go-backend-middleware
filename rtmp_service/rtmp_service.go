@@ -104,9 +104,8 @@ func (s *RtmpService) StartPush(c *gin.Context) {
 		return
 	}
 
-	// Validate recording mode against a set list
-	validRegions := []string{"na", "eu", "ap", "cn"}
-	if !s.ValidateRegion(validRegions, clientStartReq.Region) {
+	// Validate recording mode
+	if !s.ValidateRegion(clientStartReq.Region) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified."})
 		return
 	}
@@ -154,9 +153,9 @@ func (s *RtmpService) StartPush(c *gin.Context) {
 	}
 
 	// Start RTMP
-	response, err := s.HandleStartPushReq(rtmpClientReq, clientStartReq.Region, c.GetHeader("X-Request-ID"))
+	response, err := s.HandleStartPushReq(rtmpClientReq, clientStartReq.Region, clientStartReq.RegionHintIp, c.GetHeader("X-Request-ID"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start recording: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start RTMP converter: " + err.Error()})
 		return
 	}
 
@@ -167,7 +166,30 @@ func (s *RtmpService) StartPush(c *gin.Context) {
 
 // StopPush handles the stopping of an RTMP push.
 // It processes the request to stop pushing the media stream to the specified RTMP URL.
-func (s *RtmpService) StopPush(c *gin.Context) {}
+func (s *RtmpService) StopPush(c *gin.Context) {
+	// Verify the client's request. If binding fails, returns an HTTP 400 error with the specific binding error message.
+	var clientStopReq ClientStopRtmpRequest
+	if err := c.ShouldBindJSON(&clientStopReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate recording mode
+	if !s.ValidateRegion(clientStopReq.Region) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified."})
+		return
+	}
+	// Start RTMP
+	response, err := s.HandleStopPushReq(clientStopReq.ConverterId, clientStopReq.Region, c.GetHeader("X-Request-ID"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to stop RTMP converter: " + err.Error()})
+		return
+	}
+
+	// Return the wrapped Agora response
+	c.Data(http.StatusOK, "application/json", response)
+
+}
 
 // GetStatus returns the current status of the RTMP push.
 // It processes the request to get the current status of the media stream pushing operation.
