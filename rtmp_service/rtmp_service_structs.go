@@ -6,12 +6,18 @@ type ClientStartRtmpRequest struct {
 	StreamUrl          string        `json:"streamUrl"`
 	StreamKey          string        `json:"streamKey"`
 	Region             string        `json:"region"`
+	RegionHintIp       *string       `json:"regionHintIp"`
 	UseTranscoding     bool          `json:"useTranscoding"`
 	RtcStreamUid       *string       `json:"rtcStreamUid,omitempty"`
 	AudioOptions       *AudioOptions `json:"audioOptions,omitempty"`
 	VideoOptions       *VideoOptions `json:"videoOptions,omitempty"`
 	IdleTimeOut        *int          `json:"idleTimeOut,omitempty"`
 	JitterBufferSizeMs *int          `json:"jitterBufferSizeMs,omitempty"`
+}
+
+type ClientStopRtmpRequest struct {
+	ConverterId string `json:"converterId"`
+	Region      string `json:"region"`
 }
 
 // Agora Media Push Request structs
