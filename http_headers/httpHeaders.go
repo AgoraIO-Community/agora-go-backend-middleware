@@ -73,9 +73,9 @@ func (m *HttpHeaders) isOriginAllowed(origin string) bool {
 	return false
 }
 
-// TimestampMiddleware adds a timestamp header to responses.
+// Timestamp adds a timestamp header to responses.
 // This can be useful for debugging and logging purposes to track when a response was generated.
-func (m *HttpHeaders) TimestampMiddleware() gin.HandlerFunc {
+func (m *HttpHeaders) Timestamp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next() // Proceed to the next middleware/handler.
 
