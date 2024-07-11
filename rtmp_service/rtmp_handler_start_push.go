@@ -32,7 +32,7 @@ func (s *RtmpService) HandleStartPushReq(startReq RtmpPushRequest, region string
 	url := fmt.Sprintf("%s/%s/%s/rtmp-converters", s.baseURL, region, s.rtmpURL)
 
 	// append regionHintIp if available
-	if regionHintIp != nil {
+	if regionHintIp != nil && s.isValidIPv4(*regionHintIp) {
 		url = fmt.Sprintf("%s?regionHintIp=%s", url, *regionHintIp)
 	}
 
