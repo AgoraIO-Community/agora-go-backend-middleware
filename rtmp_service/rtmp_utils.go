@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net"
 	"strconv"
 	"time"
 )
@@ -44,4 +45,10 @@ func (s *RtmpService) AddTimestamp(response Timestampable) (json.RawMessage, err
 		return nil, fmt.Errorf("error marshaling final response with timestamp: %v", err)
 	}
 	return timestampedBody, nil
+}
+
+// isValidIPv4 checks if a given string is a valid IPv4 address.
+func (s *RtmpService) isValidIPv4(ip string) bool {
+	parsedIP := net.ParseIP(ip)
+	return parsedIP != nil && parsedIP.To4() != nil
 }
