@@ -29,6 +29,8 @@ type ClientStopRtmpRequest struct {
 type ClientUpdateRtmpRequest struct {
 	ConverterId        string        `json:"converterId"`                  // The ID of the RTMP converter to update
 	Region             string        `json:"region"`                       // The region where the RTMP push is running
+	StreamUrl          *string       `json:"streamUrl"`                    // The RTMP server URL to push to
+	StreamKey          *string       `json:"streamKey"`                    // The stream key for the RTMP server
 	RtcChannel         string        `json:"rtcChannel"`                   // The RTC channel name (in case of change)
 	VideoOptions       *VideoOptions `json:"videoOptions,omitempty"`       // Optional updated video options
 	JitterBufferSizeMs *int          `json:"jitterBufferSizeMs,omitempty"` // Optional updated jitter buffer size
@@ -46,7 +48,7 @@ type Converter struct {
 	Name               *string           `json:"name,omitempty"`               // Optional name for the converter
 	TranscodeOptions   *TranscodeOptions `json:"transcodeOptions,omitempty"`   // Options for transcoded push
 	RawOptions         *RawOptions       `json:"rawOptions,omitempty"`         // Options for raw (non-transcoded) push
-	RtmpUrl            string            `json:"rtmpUrl"`                      // The RTMP URL to push to
+	RtmpUrl            *string           `json:"rtmpUrl,omitempty"`            // The RTMP URL to push to
 	IdleTimeOut        *int              `json:"idleTimeOut,omitempty"`        // Optional idle timeout in seconds
 	JitterBufferSizeMs *int              `json:"jitterBufferSizeMs,omitempty"` // Optional jitter buffer size in milliseconds
 }

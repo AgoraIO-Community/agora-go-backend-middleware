@@ -105,10 +105,11 @@ func (s *RtmpService) StartPush(c *gin.Context) {
 	}
 
 	// Assemble rtmp client request
+	rtmpPushURL := clientStartReq.StreamUrl + clientStartReq.StreamKey
 	rtmpClientReq := RtmpPushRequest{
 		Converter: Converter{
 			Name:               clientStartReq.ConverterName,
-			RtmpUrl:            clientStartReq.StreamUrl + clientStartReq.StreamKey,
+			RtmpUrl:            &rtmpPushURL,
 			IdleTimeOut:        clientStartReq.IdleTimeOut,
 			JitterBufferSizeMs: clientStartReq.JitterBufferSizeMs,
 		},
@@ -183,20 +184,37 @@ func (s *RtmpService) UpdateConverter(c *gin.Context) {
 		return
 	}
 
-	if clientUpdateReq.VideoOptions != nil {
-		// Update doesnt support changes to Codec or CodecProfile
-		clientUpdateReq.VideoOptions.Codec = nil
-		clientUpdateReq.VideoOptions.CodecProfile = nil
-	}
-
 	// Validate region
 	if !s.ValidateRegion(clientUpdateReq.Region) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified."})
 		return
 	}
 
+	if clientUpdateReq.VideoOptions != nil {
+		// Update doesnt support changes to Codec or CodecProfile
+		clientUpdateReq.VideoOptions.Codec = nil
+		clientUpdateReq.VideoOptions.CodecProfile = nil
+	}
+
+	// Assemble rtmp client request
+	rtmpClientReq := RtmpPushRequest{
+		Converter: Converter{
+			JitterBufferSizeMs: clientUpdateReq.JitterBufferSizeMs,
+			TranscodeOptions: &TranscodeOptions{
+				RtcChannel:   clientUpdateReq.RtcChannel,
+				VideoOptions: clientUpdateReq.VideoOptions,
+			},
+		},
+	}
+
+	// update rtmp url if defined
+	if clientUpdateReq.StreamUrl != nil && clientUpdateReq.StreamKey != nil {
+		rtmpPushURL := *clientUpdateReq.StreamUrl + *clientUpdateReq.StreamKey
+		rtmpClientReq.Converter.RtmpUrl = &rtmpPushURL
+	}
+
 	// Update RTMP
-	response, err := s.HandleUpdatePushReq(clientUpdateReq.ConverterId, clientUpdateReq.Region, c.GetHeader("X-Request-ID"))
+	response, err := s.HandleUpdatePushReq(rtmpClientReq, clientUpdateReq.ConverterId, clientUpdateReq.Region, c.GetHeader("X-Request-ID"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update RTMP converter: " + err.Error()})
 		return
