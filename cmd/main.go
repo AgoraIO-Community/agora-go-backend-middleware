@@ -92,7 +92,7 @@ func main() {
 
 			if cloudRecordingURLExists {
 				// Init Cloud Recording Service
-				cloudRecordingUrl := baseURLEnv + strings.Replace(cloudRecordingURLEnv, "{appId}", appIDEnv, 1) // replace the place-holder value with appID
+				cloudRecordingUrl := baseURLEnv + strings.Replace(cloudRecordingURLEnv, "{appId}", appIDEnv, 1) // replace the place-holder value with appID from Env
 				cloudRecordingService := cloud_recording_service.NewCloudRecordingService(appIDEnv, cloudRecordingUrl, basicAuthKey, tokenService, storageConfig)
 				cloudRecordingService.RegisterRoutes(router)
 			}
@@ -107,8 +107,8 @@ func main() {
 
 		if rtmpURLExists {
 			// Init RTMP Service
-			rtmpURL := strings.Replace(rtmpURLEnv, "{appId}", appIDEnv, 1) //replace the place-holder value with appID
-			rtmpService := rtmp_service.NewRtmpService(appIDEnv, baseURLEnv, rtmpURL, basicAuthKey, tokenService)
+			rtmpURL := strings.Replace(rtmpURLEnv, "{appId}", appIDEnv, 1) // replace the place-holder value with appID from Env
+			rtmpService := rtmp_service.NewRtmpService(appIDEnv, baseURLEnv, rtmpURL, basicAuthKey)
 			rtmpService.RegisterRoutes(router)
 		}
 	} else {

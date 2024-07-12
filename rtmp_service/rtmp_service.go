@@ -5,18 +5,16 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/AgoraIO-Community/agora-go-backend-middleware/token_service"
 	"github.com/gin-gonic/gin"
 )
 
 // RtmpService represents the media push/pull service.
 // It holds the necessary configurations and dependencies for managing Media Push and Pull with Agora Channels.
 type RtmpService struct {
-	appID        string                      // The Agora app ID used to identify the application within Agora services.
-	baseURL      string                      // The base URL for the Agora API where all API requests are sent.
-	rtmpURL      string                      // The URL path for the Agora RTMP converter endpoint.
-	basicAuth    string                      // Basic authentication credentials required for interacting with the Agora API.
-	tokenService *token_service.TokenService // Pointer to an instance of TokenService used to generate authentication tokens for Agora API requests.
+	appID     string // The Agora app ID used to identify the application within Agora services.
+	baseURL   string // The base URL for the Agora API where all API requests are sent.
+	rtmpURL   string // The URL path for the Agora RTMP converter endpoint.
+	basicAuth string // Basic authentication credentials required for interacting with the Agora API.
 }
 
 // NewRtmpService returns a RtmpService pointer with all configurations set.
@@ -37,18 +35,17 @@ type RtmpService struct {
 //
 // Notes:
 //   - Logs a fatal error and exits if any required environment variables are missing.
-func NewRtmpService(appID string, baseURL string, rtmpURL string, basicAuth string, tokenService *token_service.TokenService) *RtmpService {
+func NewRtmpService(appID string, baseURL string, rtmpURL string, basicAuth string) *RtmpService {
 
 	// Seed the random number generator with the current time
 	rand.Seed(time.Now().UnixNano())
 
 	// Return a new instance of the service
 	return &RtmpService{
-		appID:        appID,        // The Agora app ID used to identify the application within Agora services.
-		baseURL:      baseURL,      // The base URL for the Agora API where all API requests are sent.
-		rtmpURL:      rtmpURL,      // The URL path for the Agora RTMP converter endpoint.
-		basicAuth:    basicAuth,    // Basic authentication credentials required for interacting with the Agora API.
-		tokenService: tokenService, // Pointer to an instance of TokenService used to generate authentication tokens for Agora API requests.
+		appID:     appID,     // The Agora app ID used to identify the application within Agora services.
+		baseURL:   baseURL,   // The base URL for the Agora API where all API requests are sent.
+		rtmpURL:   rtmpURL,   // The URL path for the Agora RTMP converter endpoint.
+		basicAuth: basicAuth, // Basic authentication credentials required for interacting with the Agora API.
 	}
 }
 
@@ -84,14 +81,11 @@ func (s *RtmpService) RegisterRoutes(r *gin.Engine) {
 	// group route for push operations
 	pushAPI := api.Group("/push")
 	// push routes
-	pushAPI.POST("/start", s.StartPush) // Route to start the RTMP push.
-	pushAPI.POST("/stop", s.StopPush)   // Route to stop the RTMP push.
-	pushAPI.GET("/status", s.GetStatus) // Route to get the status of the RTMP push.
+	pushAPI.POST("/start", s.StartPush)        // Route to start the RTMP push.
+	pushAPI.POST("/stop", s.StopPush)          // Route to stop the RTMP push.
+	pushAPI.GET("/status", s.GetStatus)        // Route to get the status of the RTMP push.
+	pushAPI.POST("/update", s.UpdateConverter) // Route to update the converter.
 
-	// group route for update operations
-	updateAPI := pushAPI.Group("/update")
-	updateAPI.POST("/subscriber-list", s.UpdateSubscriptionList) // Route to update the subscription list.
-	updateAPI.POST("/layout", s.UpdateLayout)                    // Route to update the layout.
 }
 
 // StartPush handles the starting of an RTMP push.
@@ -104,24 +98,9 @@ func (s *RtmpService) StartPush(c *gin.Context) {
 		return
 	}
 
-	// Validate recording mode
+	// Validate region
 	if !s.ValidateRegion(clientStartReq.Region) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified."})
-		return
-	}
-
-	// Generate a unique UID for this rtmp push
-	uid := s.GenerateUID()
-
-	// Generate token for recording using token_service
-	tokenRequest := token_service.TokenRequest{
-		TokenType: "rtc",
-		Channel:   clientStartReq.RtcChannel,
-		Uid:       uid,
-	}
-	token, err := s.tokenService.GenRtcToken(tokenRequest)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -139,7 +118,6 @@ func (s *RtmpService) StartPush(c *gin.Context) {
 		// set rtmp request to use TranscodeOptions
 		rtmpClientReq.Converter.TranscodeOptions = &TranscodeOptions{
 			RtcChannel:   clientStartReq.RtcChannel,
-			Token:        token,
 			AudioOptions: clientStartReq.AudioOptions,
 			VideoOptions: clientStartReq.VideoOptions,
 		}
@@ -147,7 +125,6 @@ func (s *RtmpService) StartPush(c *gin.Context) {
 		// set rtmp request to use RawOptions
 		rtmpClientReq.Converter.RawOptions = &RawOptions{
 			RtcChannel:   clientStartReq.RtcChannel,
-			Token:        token,
 			RtcStreamUid: *clientStartReq.RtcStreamUid,
 		}
 	}
@@ -174,12 +151,13 @@ func (s *RtmpService) StopPush(c *gin.Context) {
 		return
 	}
 
-	// Validate recording mode
+	// Validate region
 	if !s.ValidateRegion(clientStopReq.Region) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified."})
 		return
 	}
-	// Start RTMP
+
+	// Stop RTMP
 	response, err := s.HandleStopPushReq(clientStopReq.ConverterId, clientStopReq.Region, c.GetHeader("X-Request-ID"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to stop RTMP converter: " + err.Error()})
@@ -195,10 +173,35 @@ func (s *RtmpService) StopPush(c *gin.Context) {
 // It processes the request to get the current status of the media stream pushing operation.
 func (s *RtmpService) GetStatus(c *gin.Context) {}
 
-// UpdateSubscriptionList handles updating the subscription list for the RTMP push.
-// It processes the request to update the list of subscribers for the media stream.
-func (s *RtmpService) UpdateSubscriptionList(c *gin.Context) {}
+// UpdateConverter handles updating the transcoding options for the RTMP push.
+// It processes the request to update the transcoding configuration for the media stream.
+func (s *RtmpService) UpdateConverter(c *gin.Context) {
+	// Verify the client's request. If binding fails, returns an HTTP 400 error with the specific binding error message.
+	var clientUpdateReq ClientUpdateRtmpRequest
+	if err := c.ShouldBindJSON(&clientUpdateReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-// UpdateLayout handles updating the layout for the RTMP push.
-// It processes the request to update the layout configuration for the media stream.
-func (s *RtmpService) UpdateLayout(c *gin.Context) {}
+	if clientUpdateReq.VideoOptions != nil {
+		// Update doesnt support changes to Codec or CodecProfile
+		clientUpdateReq.VideoOptions.Codec = nil
+		clientUpdateReq.VideoOptions.CodecProfile = nil
+	}
+
+	// Validate region
+	if !s.ValidateRegion(clientUpdateReq.Region) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified."})
+		return
+	}
+
+	// Update RTMP
+	response, err := s.HandleStopPushReq(clientUpdateReq.ConverterId, clientUpdateReq.Region, c.GetHeader("X-Request-ID"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to stop RTMP converter: " + err.Error()})
+		return
+	}
+
+	// Return the wrapped Agora response
+	c.Data(http.StatusOK, "application/json", response)
+}

@@ -20,6 +20,16 @@ type ClientStopRtmpRequest struct {
 	Region      string `json:"region"`
 }
 
+type ClientUpdateRtmpRequest struct {
+	ConverterId        string        `json:"converterId"`
+	Region             string        `json:"region"`
+	RenewToken         bool          `json:"renewToken"`
+	RtcChannel         string        `json:"rtcChannel"`
+	UID                string        `json:"uid"`
+	VideoOptions       *VideoOptions `json:"videoOptions,omitempty"`
+	JitterBufferSizeMs *int          `json:"jitterBufferSizeMs,omitempty"`
+}
+
 // Agora Media Push Request structs
 type RtmpPushRequest struct {
 	Converter Converter `json:"converter"`
@@ -36,13 +46,11 @@ type Converter struct {
 
 type RawOptions struct {
 	RtcChannel   string `json:"rtcChannel"`
-	Token        string `json:"token"`
 	RtcStreamUid string `json:"rtcStreamUid"`
 }
 
 type TranscodeOptions struct {
 	RtcChannel   string        `json:"rtcChannel"`
-	Token        string        `json:"token"`
 	AudioOptions *AudioOptions `json:"audioOptions,omitempty"`
 	VideoOptions *VideoOptions `json:"videoOptions,omitempty"`
 }
@@ -126,10 +134,10 @@ type StartRtmpResponse struct {
 }
 
 type ConverterResponse struct {
-	ID       string `json:"id"`
-	CreateTs int64  `json:"createTs"`
-	UpdateTs int64  `json:"updateTs"`
-	State    string `json:"state"`
+	ConverterId string `json:"id"`
+	CreateTs    int64  `json:"createTs"`
+	UpdateTs    int64  `json:"updateTs"`
+	State       string `json:"state"`
 }
 
 func (s *StartRtmpResponse) SetTimestamp(timestamp string) {
