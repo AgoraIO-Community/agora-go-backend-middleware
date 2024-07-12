@@ -23,9 +23,7 @@ type ClientStopRtmpRequest struct {
 type ClientUpdateRtmpRequest struct {
 	ConverterId        string        `json:"converterId"`
 	Region             string        `json:"region"`
-	RenewToken         bool          `json:"renewToken"`
 	RtcChannel         string        `json:"rtcChannel"`
-	UID                string        `json:"uid"`
 	VideoOptions       *VideoOptions `json:"videoOptions,omitempty"`
 	JitterBufferSizeMs *int          `json:"jitterBufferSizeMs,omitempty"`
 }
