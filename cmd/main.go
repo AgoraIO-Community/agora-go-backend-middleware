@@ -22,7 +22,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func main() {
+func setupServer() *http.Server {
+	log.Println("Starting setupServer")
 	// Load environment variables from a .env file, logging an error if the file cannot be loaded.
 	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: Error loading .env file. Using existing environment variables.")
@@ -130,12 +131,19 @@ func main() {
 		Handler: router,
 	}
 
+	log.Println("Server setup completed")
+	return server
+}
+
+func main() {
+	server := setupServer()
+
 	// Start the server in a separate goroutine to handle graceful shutdown.
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
-		log.Printf("Server starting on port %s", serverPort)
+
 	}()
 
 	// Prepare to handle graceful shutdown.
