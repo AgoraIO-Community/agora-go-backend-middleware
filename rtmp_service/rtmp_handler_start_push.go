@@ -30,6 +30,7 @@ import (
 //   - Assumes the presence of s.baseURL for constructing the request URL.
 //   - Utilizes s.makeRequest for sending the HTTP request and handling the response.
 //   - Utilizes s.isValidIPv4 for validating the regionHintIp.
+//   - Utilizes s.AddTimestamp to append a timestamp to the response.
 func (s *RtmpService) HandleStartPushReq(startReq RtmpPushRequest, region string, regionHintIp *string, requestID string) (json.RawMessage, error) {
 	// Construct the URL for the start recording endpoint.
 	url := fmt.Sprintf("%s/%s/%s/rtmp-converters", s.baseURL, region, s.rtmpURL)

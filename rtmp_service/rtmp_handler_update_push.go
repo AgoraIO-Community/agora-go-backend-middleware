@@ -27,7 +27,7 @@ import (
 // Notes:
 //   - Assumes the presence of s.baseURL and s.rtmpURL for constructing the request URL.
 //   - Utilizes s.makeRequest for sending the HTTP request and handling the response.
-//   - Uses s.AddTimestamp to append a timestamp to the response.
+//   - Utilizes s.AddTimestamp to append a timestamp to the response.
 func (s *RtmpService) HandleUpdatePushReq(updateReq RtmpPushRequest, converterId string, region string, requestID string) (json.RawMessage, error) {
 	// Construct the URL for the update rtmp endpoint.
 	url := fmt.Sprintf("%s/%s/%s/rtmp-converters/%s", s.baseURL, region, s.rtmpURL, converterId)
