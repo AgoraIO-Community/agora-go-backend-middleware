@@ -306,11 +306,14 @@ func (s *RtmpService) StartPull(c *gin.Context) {
 	if clientStartReq.VideoOptions != nil {
 		// check and add audio options
 		var audioOptions PullAudioOptions
-		if clientStartReq.AudioOptions != nil {
-			audioOptions = *clientStartReq.AudioOptions
+		defaulAudioOptions := 0
+		if clientStartReq.AudioOptions != nil && clientStartReq.AudioOptions.Profile != nil {
+			audioOptions = PullAudioOptions{
+				Profile: clientStartReq.AudioOptions.Profile,
+			}
 		} else {
 			audioOptions = PullAudioOptions{
-				Profile: 0,
+				Profile: &defaulAudioOptions,
 			}
 		}
 		cloudPlayerClientReq.Player.AudioOptions = &audioOptions
@@ -357,7 +360,39 @@ func (s *RtmpService) StopPull(c *gin.Context) {
 
 // UpdateConverter handles updating the transcoding options for the RTMP push.
 // It processes the request to update the transcoding configuration for the media stream.
-func (s *RtmpService) UpdatePlayer(c *gin.Context) {}
+func (s *RtmpService) UpdatePlayer(c *gin.Context) {
+	// Verify the client's request. If binding fails, returns an HTTP 400 error with the specific binding error message.
+	var clientUpdateReq ClientUpdatePullRequest
+	if err := c.ShouldBindJSON(&clientUpdateReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate region
+	if !s.ValidateRegion(clientUpdateReq.Region) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified."})
+		return
+	}
+
+	cloudPlayerClientReq := CloudPlayerStartRequest{
+		Player: Player{
+			StreamUrl:    *clientUpdateReq.StreamUrl,
+			AudioOptions: clientUpdateReq.AudioOptions,
+			IsPause:      clientUpdateReq.IsPause,
+			SeekPosition: clientUpdateReq.SeekPosition,
+		},
+	}
+
+	// Update Cloud Player server
+	response, err := s.HandleUpdatePullReq(cloudPlayerClientReq, clientUpdateReq.PlayerId, clientUpdateReq.Region, c.GetHeader("X-Request-ID"), clientUpdateReq.SequenceId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update Cloud Player: " + err.Error()})
+		return
+	}
+
+	// Return the wrapped Agora response
+	c.Data(http.StatusOK, "application/json", response)
+}
 
 // GetPullList returns a list of the current cloud players.
 // It processes the request to get the current list of the media stream pull operations.
