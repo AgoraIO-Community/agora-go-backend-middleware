@@ -224,7 +224,7 @@ func (s *StartRtmpResponse) SetTimestamp(timestamp string) {
 // StopRtmpResponse represents the response received from the Agora server after stopping an RTMP push.
 // It includes a status message and an (Optional) timestamp.
 type StopRtmpResponse struct {
-	Status    string  `json:"status"`              // Status of the stop operation
+	Status    *string `json:"status,omitempty"`    // Status of the stop operation
 	Message   *string `json:"message,omitempty"`   // Status of the stop operation
 	Timestamp *string `json:"timestamp,omitempty"` // (Optional) timestamp for when the RTMP push was stopped
 }
@@ -257,8 +257,8 @@ func (s *StartCloudPlayerResponse) SetTimestamp(timestamp string) {
 // StopCloudPlayerResponse represents the response received from the Agora server after stopping an RTMP push.
 // It includes a status message and an (Optional) timestamp.
 type StopCloudPlayerResponse struct {
-	Status    string  `json:"status"`              // Status of the stop operation
-	Message   *string `json:"message,omitempty"`   // Status of the stop operation
+	Status    *string `json:"status,omitempty"`    // Status of the stop request
+	Message   *string `json:"message,omitempty"`   // Error Message of the failed stop request
 	Timestamp *string `json:"timestamp,omitempty"` // (Optional) timestamp for when the RTMP push was stopped
 }
 

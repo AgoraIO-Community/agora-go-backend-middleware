@@ -43,13 +43,15 @@ func (s *RtmpService) HandleStopPushReq(converterId string, region string, reque
 	var response StopRtmpResponse
 	if len(body) == 0 {
 		// Successful response won't have body so create a success response for client.
-		response.Status = "Success"
+		successStatus := "Success"
+		response.Status = &successStatus
 	} else {
 		err = json.Unmarshal(body, &response)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing rtmp stop response: %v", err)
 		}
-		response.Status = "Error"
+		errorStatus := "Error"
+		response.Status = &errorStatus
 	}
 
 	// Append a timestamp to the response for auditing and record-keeping purposes.
