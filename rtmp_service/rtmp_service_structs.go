@@ -40,6 +40,13 @@ type ClientStopRtmpRequest struct {
 	Region      string `json:"region"`      // The region where the RTMP push is running
 }
 
+// ClientStopPullRequest represents the JSON payload structure for stopping an RTMP push.
+// It contains the necessary identifiers to locate and terminate a specific RTMP push.
+type ClientStopPullRequest struct {
+	PlayerId string `json:"playerId"` // The ID of the RTMP converter to stop
+	Region   string `json:"region"`   // The region where the RTMP push is running
+}
+
 // ClientUpdateRtmpRequest represents the JSON payload structure for updating an ongoing RTMP push.
 // It allows for modifications to certain parameters of an active RTMP push.
 type ClientUpdateRtmpRequest struct {
