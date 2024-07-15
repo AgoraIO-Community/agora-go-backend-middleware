@@ -40,7 +40,7 @@ func (s *RtmpService) HandleStopPullReq(playerId string, region string, requestI
 	}
 
 	// Successful response won't have body so create a success response for client.
-	response := StopCloudPlayerResponse{
+	response := CloudPlayerUpdateResponse{
 		Status: "Success",
 	}
 

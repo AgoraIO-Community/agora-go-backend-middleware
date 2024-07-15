@@ -43,7 +43,7 @@ type ClientStopRtmpRequest struct {
 // ClientStopPullRequest represents the JSON payload structure for stopping an RTMP push.
 // It contains the necessary identifiers to locate and terminate a specific RTMP push.
 type ClientStopPullRequest struct {
-	PlayerId string `json:"playerId"` // The ID of the RTMP converter to stop
+	PlayerId string `json:"playerId"` // The ID of the cloud player to stop
 	Region   string `json:"region"`   // The region where the RTMP push is running
 }
 
@@ -58,6 +58,18 @@ type ClientUpdateRtmpRequest struct {
 	VideoOptions       *PushVideoOptions `json:"videoOptions,omitempty"`       // (Optional) updated video options
 	JitterBufferSizeMs *int              `json:"jitterBufferSizeMs,omitempty"` // (Optional) updated jitter buffer size
 	SequenceId         *int              `json:"sequenceId,omitempty"`         // (Optional) Agora server updates cloud player according to the latest sequence id
+}
+
+// ClientUpdatePullRequest represents the JSON payload structure for updating an ongoing RTMP push.
+// It allows for modifications to certain parameters of an active RTMP push.
+type ClientUpdatePullRequest struct {
+	PlayerId     string            `json:"playerId"`               // The ID of the cloud player to update
+	Region       string            `json:"region"`                 // The region where the RTMP push is running
+	StreamUrl    *string           `json:"streamUrl"`              // The CDN/RTMP server URL to pull from
+	AudioOptions *PullAudioOptions `json:"audioOptions,omitempty"` // (Optional) updated audio options
+	IsPause      *bool             `json:"isPause,omitempty"`      // (Optional) updated jitter buffer size
+	SeekPosition *int              `json:"seekPosition,omitempty"` // (Optional) Start playback at this position
+	SequenceId   *int              `json:"sequenceId,omitempty"`   // (Optional) Agora server updates cloud player according to the latest sequence id
 }
 
 // RtmpPushRequest defines the structure for a request to start or update an RTMP push to the Agora service.
@@ -91,6 +103,8 @@ type Player struct {
 	IdleTimeOut  *int              `json:"idleTimeOut,omitempty"`  // (Optional) idle timeout in seconds
 	PlayTs       *int              `json:"playTs,omitempty"`       // (Optional) Unix timestamp (in seconds) when the cloud player starts playing the online media stream.
 	EncryptMode  *string           `json:"encryptMode,omitempty"`  // (Optional) Encryption mode
+	IsPause      *bool             `json:"isPause,omitempty"`      // (Optional) updated jitter buffer size
+	SeekPosition *int              `json:"seekPosition,omitempty"` // (Optional) Start playback at this position
 	PlayerName   *string           `json:"name,omitempty"`         // (Optional) name for the cloud player instance
 }
 
@@ -118,7 +132,8 @@ type PushAudioOptions struct {
 
 // PushAudioOptions specifies the audio transcoding settings for an RTMP push.
 type PullAudioOptions struct {
-	Profile int `json:"profile"` // Sets the audio profile sample rate, bitrate, encoding mode, and the number of channels (0-5)
+	Profile *int `json:"profile,omitempty"` // Sets the audio profile sample rate, bitrate, encoding mode, and the number of channels [0-5]
+	Volume  *int `json:"volume,omitempty"`  // Sets the volume of the cloud player. The value range is [0,200]
 }
 
 // PushVideoOptions specifies the video transcoding settings for an RTMP push.
@@ -261,14 +276,14 @@ func (s *StartCloudPlayerResponse) SetTimestamp(timestamp string) {
 	s.Timestamp = &timestamp
 }
 
-// StopCloudPlayerResponse represents the response received from the Agora server after stopping an RTMP push.
+// CloudPlayerUpdateResponse represents the response received from the Agora server after stopping an RTMP push.
 // It includes a status message and an (Optional) timestamp.
-type StopCloudPlayerResponse struct {
+type CloudPlayerUpdateResponse struct {
 	Status    string  `json:"status"`              // Status of the stop request
 	Timestamp *string `json:"timestamp,omitempty"` // (Optional) timestamp for when the RTMP push was stopped
 }
 
 // SetTimestamp implements the Timestampable interface for StopCloudPlayerResponse.
-func (s *StopCloudPlayerResponse) SetTimestamp(timestamp string) {
+func (s *CloudPlayerUpdateResponse) SetTimestamp(timestamp string) {
 	s.Timestamp = &timestamp
 }
