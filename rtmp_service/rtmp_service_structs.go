@@ -57,6 +57,7 @@ type ClientUpdateRtmpRequest struct {
 	RtcChannel         string            `json:"rtcChannel"`                   // The RTC channel name (in case of change)
 	VideoOptions       *PushVideoOptions `json:"videoOptions,omitempty"`       // (Optional) updated video options
 	JitterBufferSizeMs *int              `json:"jitterBufferSizeMs,omitempty"` // (Optional) updated jitter buffer size
+	SequenceId         *int              `json:"sequenceId,omitempty"`         // (Optional) Agora server updates cloud player according to the latest sequence id
 }
 
 // RtmpPushRequest defines the structure for a request to start or update an RTMP push to the Agora service.

@@ -237,7 +237,7 @@ func (s *RtmpService) UpdateConverter(c *gin.Context) {
 	}
 
 	// Update RTMP
-	response, err := s.HandleUpdatePushReq(rtmpClientReq, clientUpdateReq.ConverterId, clientUpdateReq.Region, c.GetHeader("X-Request-ID"))
+	response, err := s.HandleUpdatePushReq(rtmpClientReq, clientUpdateReq.ConverterId, clientUpdateReq.Region, c.GetHeader("X-Request-ID"), clientUpdateReq.SequenceId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update RTMP converter: " + err.Error()})
 		return
