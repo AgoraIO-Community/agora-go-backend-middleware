@@ -102,9 +102,10 @@ func (s *RtmpService) RegisterRoutes(r *gin.Engine) {
 		// group route for pull operations
 		pullAPI := api.Group("/pull")
 		// pull routes
-		pullAPI.POST("/start", s.StartPull) // Route to start the RTMP push.
-		pullAPI.POST("/stop", s.StopPull)   // Route to stop the RTMP push.
-		pullAPI.GET("/list", s.GetPullList) // RRoute to get the list of cloud players
+		pullAPI.POST("/start", s.StartPull)     // Route to start the RTMP push.
+		pullAPI.POST("/stop", s.StopPull)       // Route to stop the RTMP push.
+		pullAPI.POST("/update", s.UpdatePlayer) // Route to update the converter.
+		pullAPI.GET("/list", s.GetPullList)     // RRoute to get the list of cloud players
 	}
 }
 
@@ -315,11 +316,48 @@ func (s *RtmpService) StartPull(c *gin.Context) {
 		cloudPlayerClientReq.Player.AudioOptions = &audioOptions
 		cloudPlayerClientReq.Player.VideoOptions = clientStartReq.VideoOptions
 	}
+
+	// Start Cloud Player
+	response, err := s.HandleStartPullReq(cloudPlayerClientReq, clientStartReq.Region, clientStartReq.StreamOriginIp, c.GetHeader("X-Request-ID"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start Cloud Player: " + err.Error()})
+		return
+	}
+
+	// Return the wrapped Agora response
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 // StopPull handles the stopping of an RTMP push.
 // It processes the request to stop pushing the media stream to the specified RTMP URL.
-func (s *RtmpService) StopPull(c *gin.Context) {}
+func (s *RtmpService) StopPull(c *gin.Context) {
+	// Verify the client's request. If binding fails, returns an HTTP 400 error with the specific binding error message.
+	var clientStopReq ClientStopPullRequest
+	if err := c.ShouldBindJSON(&clientStopReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate region
+	if !s.ValidateRegion(clientStopReq.Region) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified."})
+		return
+	}
+
+	// Stop RTMP
+	response, err := s.HandleStopPullReq(clientStopReq.PlayerId, clientStopReq.Region, c.GetHeader("X-Request-ID"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to stop Cloud Player: " + err.Error()})
+		return
+	}
+
+	// Return the wrapped Agora response
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+// UpdateConverter handles updating the transcoding options for the RTMP push.
+// It processes the request to update the transcoding configuration for the media stream.
+func (s *RtmpService) UpdatePlayer(c *gin.Context) {}
 
 // GetPullList returns a list of the current cloud players.
 // It processes the request to get the current list of the media stream pull operations.
