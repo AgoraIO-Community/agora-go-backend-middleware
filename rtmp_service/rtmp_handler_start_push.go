@@ -27,7 +27,7 @@ import (
 //   - Appends a timestamp to the response for record-keeping before returning the modified response.
 //
 // Notes:
-//   - Assumes the presence of s.baseURL for constructing the request URL.
+//   - Assumes the presence of s.baseURL & s.rtmpURL for constructing the request URL.
 //   - Utilizes s.makeRequest for sending the HTTP request and handling the response.
 //   - Utilizes s.isValidIPv4 for validating the regionHintIp.
 //   - Utilizes s.AddTimestamp to append a timestamp to the response.
@@ -52,13 +52,13 @@ func (s *RtmpService) HandleStartPushReq(startReq RtmpPushRequest, region string
 	var response StartRtmpResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing response: %v", err)
+		return nil, fmt.Errorf("error parsing rtmp converter response: %v", err)
 	}
 
 	// Append a timestamp to the Agora response for auditing and record-keeping purposes.
 	timestampBody, err := s.AddTimestamp(&response)
 	if err != nil {
-		return nil, fmt.Errorf("error encoding timestamped response: %v", err)
+		return nil, fmt.Errorf("error encoding timestamped rtmp converter response: %v", err)
 	}
 
 	return timestampBody, nil

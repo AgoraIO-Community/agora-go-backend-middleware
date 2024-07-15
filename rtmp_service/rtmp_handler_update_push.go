@@ -35,14 +35,16 @@ func (s *RtmpService) HandleUpdatePushReq(updateReq RtmpPushRequest, converterId
 	fmt.Println("HandleUpdatePushReq with url: ", url)
 
 	// Send a PATCH request to the update rtmp endpoint.
-	_, err := s.makeRequest("PATCH", url, updateReq, requestID)
+	body, err := s.makeRequest("PATCH", url, updateReq, requestID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Successful response won't have body so create a success response for client.
-	var response = StopRtmpResponse{
-		Status: "Success",
+	// Parse the response body into a struct to validate the response.
+	var response StartRtmpResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing cloud player response: %v", err)
 	}
 
 	// Append a timestamp to the response for auditing and record-keeping purposes.

@@ -24,7 +24,7 @@ import (
 //   - Appends a timestamp to the response for record-keeping before returning the modified response.
 //
 // Notes:
-//   - Assumes the presence of s.baseURL for constructing the request URL.
+//   - Assumes the presence of s.baseURL & s.rtmpURL for constructing the request URL.
 //   - Utilizes s.makeRequest for sending the HTTP request and handling the response.
 //   - Utilizes s.AddTimestamp to append a timestamp to the response.
 func (s *RtmpService) HandleStopPushReq(converterId string, region string, requestID string) (json.RawMessage, error) {
@@ -34,14 +34,22 @@ func (s *RtmpService) HandleStopPushReq(converterId string, region string, reque
 	fmt.Println("HandleStopPushReq with url: ", url)
 
 	// Send a DELETE request to the stop recording endpoint.
-	_, err := s.makeRequest("DELETE", url, nil, requestID)
+	body, err := s.makeRequest("DELETE", url, nil, requestID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Successful response won't have body so create a success response for client.
-	var response = StopRtmpResponse{
-		Status: "Success",
+	// Parse the response body into a struct to validate the response.
+	var response StopRtmpResponse
+	if len(body) == 0 {
+		// Successful response won't have body so create a success response for client.
+		response.Status = "Success"
+	} else {
+		err = json.Unmarshal(body, &response)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing rtmp stop response: %v", err)
+		}
+		response.Status = "Error"
 	}
 
 	// Append a timestamp to the response for auditing and record-keeping purposes.
