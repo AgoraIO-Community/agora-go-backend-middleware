@@ -5,16 +5,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/AgoraIO-Community/agora-go-backend-middleware/token_service"
 	"github.com/gin-gonic/gin"
 )
 
-// RtmpService represents the media push/pull service.
-// It holds the necessary configurations and dependencies for managing Media Push and Pull with Agora Channels.
+// RtmpService represents the media push and pull services.
+// It holds the necessary configurations and dependencies for managing Media Push & Pull with Agora Channels.
 type RtmpService struct {
-	appID     string // The Agora app ID used to identify the application within Agora services.
-	baseURL   string // The base URL for the Agora API where all API requests are sent.
-	rtmpURL   string // The URL path for the Agora RTMP converter endpoint.
-	basicAuth string // Basic authentication credentials required for interacting with the Agora API.
+	appID          string                      // The Agora app ID used to identify the application within Agora services.
+	baseURL        string                      // The base URL for the Agora API where all API requests are sent.
+	rtmpURL        string                      // The URL path for the Agora RTMP converter endpoint.
+	cloudPlayerURL string                      // The URL path for the Agora Clpoud Player endpoint.
+	basicAuth      string                      // Basic authentication credentials required for interacting with the Agora API.
+	tokenService   *token_service.TokenService // Pointer to an instance of TokenService used to generate authentication tokens for Agora API requests.
 }
 
 // NewRtmpService returns a RtmpService pointer with all configurations set.
@@ -23,7 +26,8 @@ type RtmpService struct {
 // Parameters:
 //   - appID: string - The Agora app ID.
 //   - baseURL: string - The base URL for the Agora API.
-//   - rtmpURL: string - The URL path for the RTMP converter.
+//   - rtmpURL: string - The URL path for Agora's RTMP converter service.
+//   - cloudPlayerURL: string - The URL path for Agora's Cloud Player service.
 //   - basicAuth: string - The basic authentication credentials.
 //
 // Returns:
@@ -35,17 +39,20 @@ type RtmpService struct {
 //
 // Notes:
 //   - Logs a fatal error and exits if any required environment variables are missing.
-func NewRtmpService(appID string, baseURL string, rtmpURL string, basicAuth string) *RtmpService {
+func NewRtmpService(appID string, baseURL string, rtmpURL string, cloudPlayerURL string, basicAuth string, tokenService *token_service.TokenService) *RtmpService {
 
 	// Seed the random number generator with the current time
 	rand.Seed(time.Now().UnixNano())
 
 	// Return a new instance of the service
 	return &RtmpService{
-		appID:     appID,     // The Agora app ID used to identify the application within Agora services.
-		baseURL:   baseURL,   // The base URL for the Agora API where all API requests are sent.
-		rtmpURL:   rtmpURL,   // The URL path for the Agora RTMP converter endpoint.
-		basicAuth: basicAuth, // Basic authentication credentials required for interacting with the Agora API.
+		appID:          appID,          // The Agora app ID used to identify the application within Agora services.
+		baseURL:        baseURL,        // The base URL for the Agora API where all API requests are sent.
+		rtmpURL:        rtmpURL,        // The URL path for the Agora RTMP converter endpoint.
+		cloudPlayerURL: cloudPlayerURL, // The URL path for the Agora Clpoud Player endpoint.
+		basicAuth:      basicAuth,      // Basic authentication credentials required for interacting with the Agora API.
+		tokenService:   tokenService,   // Pointer to an instance of TokenService used to generate authentication tokens for Agora API requests.
+
 	}
 }
 
@@ -78,14 +85,27 @@ func (s *RtmpService) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/rtmp")
 	// make sure each request containers the X-Request-ID
 	api.Use(verifyRequestID())
-	// group route for push operations
-	pushAPI := api.Group("/push")
-	// push routes
-	pushAPI.POST("/start", s.StartPush)        // Route to start the RTMP push.
-	pushAPI.POST("/stop", s.StopPush)          // Route to stop the RTMP push.
-	pushAPI.GET("/status", s.GetStatus)        // Route to get the status of the RTMP push.
-	pushAPI.POST("/update", s.UpdateConverter) // Route to update the converter.
 
+	// setup push routes (rtmp converter)
+	if s.rtmpURL != "" {
+		// group route for push operations
+		pushAPI := api.Group("/push")
+		// push routes
+		pushAPI.POST("/start", s.StartPush)        // Route to start the RTMP push.
+		pushAPI.POST("/stop", s.StopPush)          // Route to stop the RTMP push.
+		pushAPI.GET("/list", s.GetPushList)        // Route to get the list of RTMP converters.
+		pushAPI.POST("/update", s.UpdateConverter) // Route to update the converter.
+	}
+
+	// setup pull routes (cloud player)
+	if s.cloudPlayerURL != "" {
+		// group route for pull operations
+		pullAPI := api.Group("/pull")
+		// pull routes
+		pullAPI.POST("/start", s.StartPull) // Route to start the RTMP push.
+		pullAPI.POST("/stop", s.StopPull)   // Route to stop the RTMP push.
+		pullAPI.GET("/list", s.GetPullList) // RRoute to get the list of cloud players
+	}
 }
 
 // StartPush handles the starting of an RTMP push.
@@ -170,9 +190,11 @@ func (s *RtmpService) StopPush(c *gin.Context) {
 
 }
 
-// GetStatus returns the current status of the RTMP push.
-// It processes the request to get the current status of the media stream pushing operation.
-func (s *RtmpService) GetStatus(c *gin.Context) {}
+// GetPushList returns a list of the current RTMP converters.
+// It processes the request to get the current list of the media stream pushing operations.
+func (s *RtmpService) GetPushList(c *gin.Context) {
+	// TODO: add logic to check context for api group
+}
 
 // UpdateConverter handles updating the transcoding options for the RTMP push.
 // It processes the request to update the transcoding configuration for the media stream.
@@ -223,3 +245,82 @@ func (s *RtmpService) UpdateConverter(c *gin.Context) {
 	// Return the wrapped Agora response
 	c.Data(http.StatusOK, "application/json", response)
 }
+
+// StartPull handles the starting of an RTMP pull.
+// It processes the request to start pulling the media stream from the specified RTMP URL into the given channel.
+func (s *RtmpService) StartPull(c *gin.Context) {
+	// Verify the client's request. If binding fails, returns an HTTP 400 error with the specific binding error message.
+	var clientStartReq ClientStartCloudPlayerRequest
+	if err := c.ShouldBindJSON(&clientStartReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate region against a set list
+	if !s.ValidateRegion(clientStartReq.Region) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified."})
+		return
+	}
+
+	// Assign uid
+	var uid string
+	// check & asign uid from client start request
+	if clientStartReq.Uid != nil {
+		uid = *clientStartReq.Uid
+	} else {
+		// Generate a unique UID for this cloud player
+		uid = s.GenerateUID()
+	}
+
+	if clientStartReq.IdleTimeOut != nil {
+		clientStartReq.IdleTimeOut = s.ValidateIdleTimeOut(clientStartReq.IdleTimeOut)
+	}
+
+	// Generate token for recording using token_service
+	tokenRequest := token_service.TokenRequest{
+		TokenType: "rtc",
+		Channel:   clientStartReq.ChannelName,
+		Uid:       uid,
+	}
+	token, err := s.tokenService.GenRtcToken(tokenRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	cloudPlayerClientReq := CloudPlayerStartRequest{
+		Player: Player{
+			StreamUrl:   clientStartReq.StreamUrl,
+			ChannelName: clientStartReq.ChannelName,
+			Token:       token,
+			Uid:         uid,
+			IdleTimeOut: clientStartReq.IdleTimeOut,
+			PlayTs:      clientStartReq.PlayTs,
+			EncryptMode: clientStartReq.EncryptMode,
+			PlayerName:  clientStartReq.PlayerName,
+		},
+	}
+
+	// check and add transcoding config
+	if clientStartReq.VideoOptions != nil {
+		// check and add audio options
+		var audioOptions PullAudioOptions
+		if clientStartReq.AudioOptions != nil {
+			audioOptions = *clientStartReq.AudioOptions
+		} else {
+			audioOptions = PullAudioOptions{
+				Profile: 0,
+			}
+		}
+		cloudPlayerClientReq.Player.AudioOptions = &audioOptions
+		cloudPlayerClientReq.Player.VideoOptions = clientStartReq.VideoOptions
+	}
+}
+
+// StopPull handles the stopping of an RTMP push.
+// It processes the request to stop pushing the media stream to the specified RTMP URL.
+func (s *RtmpService) StopPull(c *gin.Context) {}
+
+// GetPullList returns a list of the current cloud players.
+// It processes the request to get the current list of the media stream pull operations.
+func (s *RtmpService) GetPullList(c *gin.Context) {}

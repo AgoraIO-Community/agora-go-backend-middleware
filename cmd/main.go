@@ -39,6 +39,7 @@ func setupServer() *http.Server {
 	cloudRecordingURLEnv, cloudRecordingURLExists := os.LookupEnv("AGORA_CLOUD_RECORDING_URL")
 	realTimeTranscriptionURLEnv, realTimeTranscriptionURLExists := os.LookupEnv("AGORA_RTT_URL")
 	rtmpURLEnv, rtmpURLExists := os.LookupEnv("AGORA_RTMP_URL")
+	cloudPlayerURLEnv, cloudPlayerURLExists := os.LookupEnv("AGORA_CLOUD_PLAYER_URL")
 	storageVendorEnv, vendorExists := os.LookupEnv("STORAGE_VENDOR")
 	storageRegionEnv, regionExists := os.LookupEnv("STORAGE_REGION")
 	storageBucketEnv, bucketExists := os.LookupEnv("STORAGE_BUCKET")
@@ -106,10 +107,18 @@ func setupServer() *http.Server {
 			}
 		}
 
-		if rtmpURLExists {
+		if rtmpURLExists || cloudPlayerURLExists {
+			// support just rtmp or cloudplayer
+			rtmpURL, cloudPlayerURL := "", ""
+			// Check if rtmp and cloud player urls exist and replace the place-holder value with appID from Env
+			if rtmpURLExists {
+				rtmpURL = strings.Replace(rtmpURLEnv, "{appId}", appIDEnv, 1)
+			}
+			if cloudPlayerURLExists {
+				cloudPlayerURL = strings.Replace(cloudPlayerURLEnv, "{appId}", appIDEnv, 1)
+			}
 			// Init RTMP Service
-			rtmpURL := strings.Replace(rtmpURLEnv, "{appId}", appIDEnv, 1) // replace the place-holder value with appID from Env
-			rtmpService := rtmp_service.NewRtmpService(appIDEnv, baseURLEnv, rtmpURL, basicAuthKey)
+			rtmpService := rtmp_service.NewRtmpService(appIDEnv, baseURLEnv, rtmpURL, cloudPlayerURL, basicAuthKey, tokenService)
 			rtmpService.RegisterRoutes(router)
 		}
 	} else {
