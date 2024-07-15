@@ -34,24 +34,14 @@ func (s *RtmpService) HandleStopPushReq(converterId string, region string, reque
 	fmt.Println("HandleStopPushReq with url: ", url)
 
 	// Send a DELETE request to the stop recording endpoint.
-	body, err := s.makeRequest("DELETE", url, nil, requestID)
+	_, err := s.makeRequest("DELETE", url, nil, requestID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Parse the response body into a struct to validate the response.
-	var response StopRtmpResponse
-	if len(body) == 0 {
-		// Successful response won't have body so create a success response for client.
-		successStatus := "Success"
-		response.Status = &successStatus
-	} else {
-		err = json.Unmarshal(body, &response)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing rtmp stop response: %v", err)
-		}
-		errorStatus := "Error"
-		response.Status = &errorStatus
+	// Successful response won't have body so create a success response for client.
+	response := StopRtmpResponse{
+		Status: "Success",
 	}
 
 	// Append a timestamp to the response for auditing and record-keeping purposes.
