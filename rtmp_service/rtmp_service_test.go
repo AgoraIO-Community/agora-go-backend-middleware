@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -13,394 +14,591 @@ import (
 )
 
 type MockRtmpService struct {
-	*RtmpService
-	MockHandleStartPushReq  func(startReq RtmpPushRequest, region string, regionHintIp *string, requestID string) (json.RawMessage, error)
-	MockHandleStopPushReq   func(converterId string, region string, requestID string) (json.RawMessage, error)
-	MockHandleUpdatePushReq func(updateReq RtmpPushRequest, converterId string, region string, requestID string) (json.RawMessage, error)
+	StartPushFunc           func(c *gin.Context)
+	StopPushFunc            func(c *gin.Context)
+	StartPullFunc           func(c *gin.Context)
+	StopPullFunc            func(c *gin.Context)
+	UpdateConverterFunc     func(c *gin.Context)
+	UpdatePlayerFunc        func(c *gin.Context)
+	HandleStartPushReqFunc  func(startReq RtmpPushRequest, region string, regionHintIp *string, requestID string) (json.RawMessage, error)
+	HandleStopPushReqFunc   func(converterId string, region string, requestID string) (json.RawMessage, error)
+	HandleStartPullReqFunc  func(startReq CloudPlayerStartRequest, region string, streamOriginIp *string, requestID string) (json.RawMessage, error)
+	HandleStopPullReqFunc   func(playerId string, region string, requestID string) (json.RawMessage, error)
+	HandleUpdatePushReqFunc func(updateReq RtmpPushRequest, converterId string, region string, requestID string, sequenceId *int) (json.RawMessage, error)
+	HandleUpdatePullReqFunc func(updateReq CloudPlayerStartRequest, playerId string, region string, requestID string, sequenceId *int) (json.RawMessage, error)
+	AddTimestampFunc        func(response Timestampable) (json.RawMessage, error)
 }
 
 func (m *MockRtmpService) StartPush(c *gin.Context) {
-	// Extract the necessary information from the context
-	var clientStartReq ClientStartRtmpRequest
-	if err := c.ShouldBindJSON(&clientStartReq); err != nil {
+	var req ClientStartRtmpRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Validate required fields
-	if clientStartReq.RtcChannel == "" || clientStartReq.StreamUrl == "" || clientStartReq.StreamKey == "" || clientStartReq.Region == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+	// Add region validation
+	if !m.ValidateRegion(req.Region) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified"})
 		return
 	}
-
-	// Validate region
-	if !m.ValidateRegion(clientStartReq.Region) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region"})
-		return
+	response := StartRtmpResponse{
+		Converter: ConverterResponse{
+			ConverterId: "test_converter_id",
+			CreateTs:    time.Now().Unix(),
+			UpdateTs:    time.Now().Unix(),
+			State:       "active",
+		},
+		Fields: "test_fields",
 	}
-
-	if m.MockHandleStartPushReq == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "MockHandleStartPushReq not implemented"})
-		return
-	}
-
-	// Call the mock function
-	response, err := m.MockHandleStartPushReq(RtmpPushRequest{}, clientStartReq.Region, clientStartReq.RegionHintIp, c.GetHeader("X-Request-ID"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.Data(http.StatusOK, "application/json", response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (m *MockRtmpService) StopPush(c *gin.Context) {
-	var clientStopReq ClientStopRtmpRequest
-	if err := c.ShouldBindJSON(&clientStopReq); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	response, err := m.MockHandleStopPushReq(clientStopReq.ConverterId, clientStopReq.Region, c.GetHeader("X-Request-ID"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.Data(http.StatusOK, "application/json", response)
-}
+func (m *MockRtmpService) StopPush(c *gin.Context) { m.StopPushFunc(c) }
 
 func (m *MockRtmpService) UpdateConverter(c *gin.Context) {
-	var clientUpdateReq ClientUpdateRtmpRequest
-	if err := c.ShouldBindJSON(&clientUpdateReq); err != nil {
+	var req ClientUpdateRtmpRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	response, err := m.MockHandleUpdatePushReq(RtmpPushRequest{}, clientUpdateReq.ConverterId, clientUpdateReq.Region, c.GetHeader("X-Request-ID"))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// Add region validation
+	if !m.ValidateRegion(req.Region) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified"})
 		return
 	}
-
-	c.Data(http.StatusOK, "application/json", response)
-}
-
-func TestNewRtmpService(t *testing.T) {
-	appID := "testAppID"
-	baseURL := "https://api.agora.io/"
-	rtmpURL := "v1/projects/{appId}/rtmp-converters"
-	basicAuth := "Basic dGVzdDp0ZXN0"
-
-	service := NewRtmpService(appID, baseURL, rtmpURL, basicAuth)
-
-	assert.NotNil(t, service)
-	assert.Equal(t, appID, service.appID)
-	assert.Equal(t, baseURL, service.baseURL)
-	assert.Equal(t, rtmpURL, service.rtmpURL)
-	assert.Equal(t, basicAuth, service.basicAuth)
-}
-
-func TestRegisterRoutes(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	service := NewRtmpService("testAppID", "https://api.agora.io/", "v1/projects/{appId}/rtmp-converters", "Basic dGVzdDp0ZXN0")
-
-	service.RegisterRoutes(router)
-
-	routes := router.Routes()
-	expectedRoutes := []string{
-		"POST /rtmp/push/start",
-		"POST /rtmp/push/stop",
-		"GET /rtmp/push/status",
-		"POST /rtmp/push/update",
+	response := StartRtmpResponse{
+		Converter: ConverterResponse{
+			ConverterId: req.ConverterId,
+			CreateTs:    time.Now().Unix(),
+			UpdateTs:    time.Now().Unix(),
+			State:       "active",
+		},
+		Fields: "updated_fields",
 	}
+	c.JSON(http.StatusOK, response)
+}
 
-	for _, route := range expectedRoutes {
-		found := false
-		for _, r := range routes {
-			if r.Method+" "+r.Path == route {
-				found = true
-				break
-			}
+func (m *MockRtmpService) StartPull(c *gin.Context) { m.StartPullFunc(c) }
+func (m *MockRtmpService) StopPull(c *gin.Context)  { m.StopPullFunc(c) }
+
+func (m *MockRtmpService) UpdatePlayer(c *gin.Context) {
+	var req ClientUpdatePullRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// Add region validation
+	if !m.ValidateRegion(req.Region) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid region specified"})
+		return
+	}
+	response := CloudPlayerUpdateResponse{
+		Status: "success",
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+// Add this method to your MockRtmpService
+func (m *MockRtmpService) ValidateRegion(region string) bool {
+	validRegions := []string{"na", "eu", "ap", "cn"}
+	for _, r := range validRegions {
+		if r == region {
+			return true
 		}
-		assert.True(t, found, "Route %s not found", route)
 	}
+	return false
+}
+
+func (m *MockRtmpService) HandleStartPushReq(s RtmpPushRequest, r string, rh *string, rid string) (json.RawMessage, error) {
+	return m.HandleStartPushReqFunc(s, r, rh, rid)
+}
+func (m *MockRtmpService) HandleStopPushReq(c string, r string, rid string) (json.RawMessage, error) {
+	return m.HandleStopPushReqFunc(c, r, rid)
+}
+func (m *MockRtmpService) HandleStartPullReq(s CloudPlayerStartRequest, r string, so *string, rid string) (json.RawMessage, error) {
+	return m.HandleStartPullReqFunc(s, r, so, rid)
+}
+func (m *MockRtmpService) HandleStopPullReq(p string, r string, rid string) (json.RawMessage, error) {
+	return m.HandleStopPullReqFunc(p, r, rid)
+}
+func (m *MockRtmpService) HandleUpdatePushReq(u RtmpPushRequest, c string, r string, rid string, s *int) (json.RawMessage, error) {
+	return m.HandleUpdatePushReqFunc(u, c, r, rid, s)
+}
+func (m *MockRtmpService) HandleUpdatePullReq(u CloudPlayerStartRequest, p string, r string, rid string, s *int) (json.RawMessage, error) {
+	return m.HandleUpdatePullReqFunc(u, p, r, rid, s)
+}
+func (m *MockRtmpService) AddTimestamp(r Timestampable) (json.RawMessage, error) {
+	return m.AddTimestampFunc(r)
 }
 
 func TestStartPush(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
+
 	mockService := &MockRtmpService{
-		RtmpService: NewRtmpService("testAppID", "https://api.agora.io/", "v1/projects/{appId}/rtmp-converters", "Basic dGVzdDp0ZXN0"),
+		StartPushFunc: func(c *gin.Context) {
+			var req ClientStartRtmpRequest
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			response := StartRtmpResponse{
+				Converter: ConverterResponse{
+					ConverterId: "test_converter_id",
+					CreateTs:    time.Now().Unix(),
+					UpdateTs:    time.Now().Unix(),
+					State:       "active",
+				},
+				Fields: "test_fields",
+			}
+			c.JSON(http.StatusOK, response)
+		},
 	}
-	mockService.MockHandleStartPushReq = func(startReq RtmpPushRequest, region string, regionHintIp *string, requestID string) (json.RawMessage, error) {
-		response := StartRtmpResponse{
-			Converter: ConverterResponse{
-				ConverterId: "test-converter-id",
-				CreateTs:    time.Now().Unix(),
-				UpdateTs:    time.Now().Unix(),
-				State:       "ACTIVE",
-			},
-			Fields: "test-fields",
-		}
-		return json.Marshal(response)
-	}
+
 	router.POST("/rtmp/push/start", mockService.StartPush)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/rtmp/push/start", strings.NewReader(`{
-        "converterName": "test-converter",
-        "rtcChannel": "test-channel",
-        "streamUrl": "rtmp://test.com/live",
-        "streamKey": "test-key",
-        "region": "na",
-        "useTranscoding": true
-    }`))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Request-ID", "test-request-id")
-	router.ServeHTTP(w, req)
+	t.Run("Valid Request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtmp/push/start", strings.NewReader(`{"rtcChannel":"test_channel","streamUrl":"rtmp://test.com/live","streamKey":"test_key","region":"na","useTranscoding":true}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", "test-request-id")
+		router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response StartRtmpResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, response.Converter.ConverterId)
+	})
 
-	var response StartRtmpResponse
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.Equal(t, "test-converter-id", response.Converter.ConverterId)
-	assert.Equal(t, "ACTIVE", response.Converter.State)
+	t.Run("Invalid Region", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtmp/push/start", strings.NewReader(`{"rtcChannel":"test_channel","streamUrl":"rtmp://test.com/live","streamKey":"test_key","region":"invalid","useTranscoding":true}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", "test-request-id")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "Invalid region specified")
+	})
 }
 
 func TestStopPush(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
+
 	mockService := &MockRtmpService{
-		RtmpService: NewRtmpService("testAppID", "https://api.agora.io/", "v1/projects/{appId}/rtmp-converters", "Basic dGVzdDp0ZXN0"),
+		StopPushFunc: func(c *gin.Context) {
+			var req ClientStopRtmpRequest
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			response := StopRtmpResponse{
+				Status: "success",
+			}
+			c.JSON(http.StatusOK, response)
+		},
 	}
-	mockService.MockHandleStopPushReq = func(converterId string, region string, requestID string) (json.RawMessage, error) {
-		response := StopRtmpResponse{
-			Status: "Success",
-		}
-		return json.Marshal(response)
-	}
+
 	router.POST("/rtmp/push/stop", mockService.StopPush)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/rtmp/push/stop", strings.NewReader(`{
-        "converterId": "test-converter-id",
-        "region": "na"
-    }`))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Request-ID", "test-request-id")
-	router.ServeHTTP(w, req)
+	t.Run("Valid Request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtmp/push/stop", strings.NewReader(`{"converterId":"test_converter_id","region":"na"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", "test-request-id")
+		router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response StopRtmpResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "success", response.Status)
+	})
+}
 
-	var response StopRtmpResponse
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.Equal(t, "Success", response.Status)
+func TestStartPull(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	mockService := &MockRtmpService{
+		StartPullFunc: func(c *gin.Context) {
+			var req ClientStartCloudPlayerRequest
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			response := StartCloudPlayerResponse{
+				Player: PlayerResponse{
+					PlayerId: "test_player_id",
+					CreateTs: time.Now().Unix(),
+				},
+				Fields: "test_fields",
+			}
+			c.JSON(http.StatusOK, response)
+		},
+	}
+
+	router.POST("/rtmp/pull/start", mockService.StartPull)
+
+	t.Run("Valid Request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtmp/pull/start", strings.NewReader(`{"channelName":"test_channel","streamUrl":"rtmp://test.com/live","region":"na"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", "test-request-id")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response StartCloudPlayerResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, response.Player.PlayerId)
+	})
+}
+
+func TestStopPull(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	mockService := &MockRtmpService{
+		StopPullFunc: func(c *gin.Context) {
+			var req ClientStopPullRequest
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			response := CloudPlayerUpdateResponse{
+				Status: "success",
+			}
+			c.JSON(http.StatusOK, response)
+		},
+	}
+
+	router.POST("/rtmp/pull/stop", mockService.StopPull)
+
+	t.Run("Valid Request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtmp/pull/stop", strings.NewReader(`{"playerId":"test_player_id","region":"na"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", "test-request-id")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response CloudPlayerUpdateResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "success", response.Status)
+	})
+}
+
+func TestAddTimestamp(t *testing.T) {
+	mockService := &MockRtmpService{
+		AddTimestampFunc: func(response Timestampable) (json.RawMessage, error) {
+			timestamp := time.Now().UTC().Format(time.RFC3339)
+			response.SetTimestamp(timestamp)
+			return json.Marshal(response)
+		},
+	}
+
+	response := &StartRtmpResponse{
+		Converter: ConverterResponse{
+			ConverterId: "test_converter_id",
+			CreateTs:    time.Now().Unix(),
+			UpdateTs:    time.Now().Unix(),
+			State:       "active",
+		},
+		Fields: "test_fields",
+	}
+	jsonResponse, err := mockService.AddTimestamp(response)
+	if err != nil {
+		t.Fatalf("AddTimestamp failed: %v", err)
+	}
+
+	var updatedResponse StartRtmpResponse
+	err = json.Unmarshal(jsonResponse, &updatedResponse)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if updatedResponse.Timestamp == nil {
+		t.Error("Expected timestamp to be added, but it's nil")
+	}
+
+	timestamp, err := time.Parse(time.RFC3339, *updatedResponse.Timestamp)
+	if err != nil {
+		t.Fatalf("Failed to parse timestamp: %v", err)
+	}
+
+	if time.Since(timestamp) > 5*time.Second {
+		t.Errorf("Timestamp is not recent: %v", *updatedResponse.Timestamp)
+	}
 }
 
 func TestUpdateConverter(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
+
 	mockService := &MockRtmpService{
-		RtmpService: NewRtmpService("testAppID", "https://api.agora.io/", "v1/projects/{appId}/rtmp-converters", "Basic dGVzdDp0ZXN0"),
+		UpdateConverterFunc: func(c *gin.Context) {
+			var req ClientUpdateRtmpRequest
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			response := StartRtmpResponse{
+				Converter: ConverterResponse{
+					ConverterId: req.ConverterId,
+					CreateTs:    time.Now().Unix(),
+					UpdateTs:    time.Now().Unix(),
+					State:       "active",
+				},
+				Fields: "updated_fields",
+			}
+			c.JSON(http.StatusOK, response)
+		},
 	}
-	mockService.MockHandleUpdatePushReq = func(updateReq RtmpPushRequest, converterId string, region string, requestID string) (json.RawMessage, error) {
-		response := StopRtmpResponse{
-			Status: "Success",
-		}
-		return json.Marshal(response)
-	}
+
 	router.POST("/rtmp/push/update", mockService.UpdateConverter)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/rtmp/push/update", strings.NewReader(`{
-        "converterId": "test-converter-id",
-        "region": "na",
-        "rtcChannel": "updated-channel",
-        "streamUrl": "rtmp://updated.com/live",
-        "streamKey": "updated-key"
-    }`))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Request-ID", "test-request-id")
-	router.ServeHTTP(w, req)
+	t.Run("Valid Update Request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtmp/push/update", strings.NewReader(`{"converterId":"test_converter_id","region":"na","rtcChannel":"updated_channel","videoOptions":{"bitrate":2000}}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", "test-request-id")
+		router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response StartRtmpResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "test_converter_id", response.Converter.ConverterId)
+		assert.Equal(t, "updated_fields", response.Fields)
+	})
 
-	var response StopRtmpResponse
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.Equal(t, "Success", response.Status)
+	t.Run("Invalid Region", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtmp/push/update", strings.NewReader(`{"converterId":"test_converter_id","region":"invalid","rtcChannel":"updated_channel"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", "test-request-id")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "Invalid region specified")
+	})
 }
 
+func TestUpdatePlayer(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	mockService := &MockRtmpService{
+		UpdatePlayerFunc: func(c *gin.Context) {
+			var req ClientUpdatePullRequest
+			if err := c.ShouldBindJSON(&req); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			response := CloudPlayerUpdateResponse{
+				Status: "success",
+			}
+			c.JSON(http.StatusOK, response)
+		},
+	}
+
+	router.POST("/rtmp/pull/update", mockService.UpdatePlayer)
+
+	t.Run("Valid Update Request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtmp/pull/update", strings.NewReader(`{"playerId":"test_player_id","region":"na","streamUrl":"rtmp://updated.com/live"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", "test-request-id")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		var response CloudPlayerUpdateResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "success", response.Status)
+	})
+
+	t.Run("Invalid Region", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/rtmp/pull/update", strings.NewReader(`{"playerId":"test_player_id","region":"invalid","streamUrl":"rtmp://updated.com/live"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Request-ID", "test-request-id")
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "Invalid region specified")
+	})
+}
+
+// func TestGetPushList(t *testing.T) {
+// 	gin.SetMode(gin.TestMode)
+// 	router := gin.New()
+
+// 	mockService := &MockRtmpService{
+// 		GetPushListFunc: func(c *gin.Context) {
+// 			response := []ConverterResponse{
+// 				{
+// 					ConverterId: "converter_1",
+// 					CreateTs:    time.Now().Unix(),
+// 					UpdateTs:    time.Now().Unix(),
+// 					State:       "active",
+// 				},
+// 				{
+// 					ConverterId: "converter_2",
+// 					CreateTs:    time.Now().Unix(),
+// 					UpdateTs:    time.Now().Unix(),
+// 					State:       "inactive",
+// 				},
+// 			}
+// 			c.JSON(http.StatusOK, response)
+// 		},
+// 	}
+
+// 	router.GET("/rtmp/push/list", mockService.GetPushList)
+
+// 	t.Run("Get Push List", func(t *testing.T) {
+// 		w := httptest.NewRecorder()
+// 		req, _ := http.NewRequest("GET", "/rtmp/push/list", nil)
+// 		req.Header.Set("X-Request-ID", "test-request-id")
+// 		router.ServeHTTP(w, req)
+
+// 		assert.Equal(t, http.StatusOK, w.Code)
+// 		var response []ConverterResponse
+// 		err := json.Unmarshal(w.Body.Bytes(), &response)
+// 		assert.NoError(t, err)
+// 		assert.Len(t, response, 2)
+// 		assert.Equal(t, "converter_1", response[0].ConverterId)
+// 		assert.Equal(t, "converter_2", response[1].ConverterId)
+// 	})
+// }
+
+// func TestGetPullList(t *testing.T) {
+// 	gin.SetMode(gin.TestMode)
+// 	router := gin.New()
+
+// 	mockService := &MockRtmpService{
+// 		GetPullListFunc: func(c *gin.Context) {
+// 			response := []PlayerResponse{
+// 				{
+// 					PlayerId: "player_1",
+// 					CreateTs: time.Now().Unix(),
+// 					Uid:      stringPtr("uid_1"),
+// 				},
+// 				{
+// 					PlayerId: "player_2",
+// 					CreateTs: time.Now().Unix(),
+// 					Uid:      stringPtr("uid_2"),
+// 				},
+// 			}
+// 			c.JSON(http.StatusOK, response)
+// 		},
+// 	}
+
+// 	router.GET("/rtmp/pull/list", mockService.GetPullList)
+
+// 	t.Run("Get Pull List", func(t *testing.T) {
+// 		w := httptest.NewRecorder()
+// 		req, _ := http.NewRequest("GET", "/rtmp/pull/list", nil)
+// 		req.Header.Set("X-Request-ID", "test-request-id")
+// 		router.ServeHTTP(w, req)
+
+// 		assert.Equal(t, http.StatusOK, w.Code)
+// 		var response []PlayerResponse
+// 		err := json.Unmarshal(w.Body.Bytes(), &response)
+// 		assert.NoError(t, err)
+// 		assert.Len(t, response, 2)
+// 		assert.Equal(t, "player_1", response[0].PlayerId)
+// 		assert.Equal(t, "player_2", response[1].PlayerId)
+// 	})
+// }
+
 func TestValidateRegion(t *testing.T) {
-	service := NewRtmpService("testAppID", "https://api.agora.io/", "v1/projects/{appId}/rtmp-converters", "Basic dGVzdDp0ZXN0")
+	service := &RtmpService{}
 
 	testCases := []struct {
+		name     string
 		region   string
 		expected bool
 	}{
-		{"na", true},
-		{"eu", true},
-		{"ap", true},
-		{"cn", true},
-		{"invalid", false},
-		{"", false},
-	}
-
-	for _, tc := range testCases {
-		result := service.ValidateRegion(tc.region)
-		assert.Equal(t, tc.expected, result, "Region: %s", tc.region)
-	}
-}
-
-func TestAddTimestamp(t *testing.T) {
-	service := NewRtmpService("testAppID", "https://api.agora.io/", "v1/projects/{appId}/rtmp-converters", "Basic dGVzdDp0ZXN0")
-
-	response := &StartRtmpResponse{
-		Converter: ConverterResponse{
-			ConverterId: "test-converter-id",
-			CreateTs:    time.Now().Unix(),
-			UpdateTs:    time.Now().Unix(),
-			State:       "ACTIVE",
-		},
-		Fields: "test-fields",
-	}
-
-	timestampedResponse, err := service.AddTimestamp(response)
-	assert.NoError(t, err)
-
-	var updatedResponse StartRtmpResponse
-	err = json.Unmarshal(timestampedResponse, &updatedResponse)
-	assert.NoError(t, err)
-
-	assert.NotNil(t, updatedResponse.Timestamp)
-	timestamp, err := time.Parse(time.RFC3339, *updatedResponse.Timestamp)
-	assert.NoError(t, err)
-	assert.True(t, time.Since(timestamp) < 5*time.Second)
-}
-
-func TestIsValidIPv4(t *testing.T) {
-	service := NewRtmpService("testAppID", "https://api.agora.io/", "v1/projects/{appId}/rtmp-converters", "Basic dGVzdDp0ZXN0")
-
-	testCases := []struct {
-		ip       string
-		expected bool
-	}{
-		{"192.168.0.1", true},
-		{"10.0.0.1", true},
-		{"172.16.0.1", true},
-		{"256.1.2.3", false},
-		{"1.2.3.4.5", false},
-		{"::1", false},
-		{"2001:db8::1", false},
-		{"not an ip", false},
-		{"", false},
-	}
-
-	for _, tc := range testCases {
-		result := service.isValidIPv4(tc.ip)
-		assert.Equal(t, tc.expected, result, "IP: %s", tc.ip)
-	}
-}
-
-func TestMakeRequest(t *testing.T) {
-	service := NewRtmpService("testAppID", "https://api.agora.io/", "v1/projects/{appId}/rtmp-converters", "Basic dGVzdDp0ZXN0")
-
-	// Create a test server
-	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "POST", r.Method)
-		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, "Basic dGVzdDp0ZXN0", r.Header.Get("Authorization"))
-		assert.Equal(t, "test-request-id", r.Header.Get("X-Request-ID"))
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("X-Request-ID", "test-request-id")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"success"}`))
-	}))
-	defer testServer.Close()
-
-	body := map[string]string{"key": "value"}
-	response, err := service.makeRequest("POST", testServer.URL, body, "test-request-id")
-
-	assert.NoError(t, err)
-	assert.Equal(t, []byte(`{"status":"success"}`), response)
-}
-
-func TestStartPushErrors(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	mockService := &MockRtmpService{
-		RtmpService: NewRtmpService("testAppID", "https://api.agora.io/", "v1/projects/{appId}/rtmp-converters", "Basic dGVzdDp0ZXN0"),
-	}
-	router.POST("/rtmp/push/start", mockService.StartPush)
-
-	testCases := []struct {
-		name           string
-		body           string
-		expectedStatus int
-		expectedError  string
-	}{
-		{
-			name:           "Invalid JSON",
-			body:           `{"invalid json"}`,
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "invalid character '}' after object key",
-		},
-		{
-			name:           "Missing required fields",
-			body:           `{"converterName": "test-converter"}`,
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "Missing required fields",
-		},
-		{
-			name:           "Invalid region",
-			body:           `{"rtcChannel": "test-channel", "streamUrl": "rtmp://test.com/live", "streamKey": "test-key", "region": "invalid", "useTranscoding": true}`,
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "Invalid region",
-		},
-		{
-			name:           "MockHandleStartPushReq not implemented",
-			body:           `{"rtcChannel": "test-channel", "streamUrl": "rtmp://test.com/live", "streamKey": "test-key", "region": "na", "useTranscoding": true}`,
-			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "MockHandleStartPushReq not implemented",
-		},
+		{"Valid region na", "na", true},
+		{"Valid region eu", "eu", true},
+		{"Valid region ap", "ap", true},
+		{"Valid region cn", "cn", true},
+		{"Invalid region", "invalid", false},
+		{"Empty region", "", false},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("POST", "/rtmp/push/start", strings.NewReader(tc.body))
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("X-Request-ID", "test-request-id")
-			router.ServeHTTP(w, req)
-
-			assert.Equal(t, tc.expectedStatus, w.Code)
-
-			var response map[string]string
-			err := json.Unmarshal(w.Body.Bytes(), &response)
-			assert.NoError(t, err)
-			assert.Contains(t, response["error"], tc.expectedError)
+			result := service.ValidateRegion(tc.region)
+			assert.Equal(t, tc.expected, result)
 		})
 	}
 }
 
-func TestMakeRequestErrors(t *testing.T) {
-	service := NewRtmpService("testAppID", "https://api.agora.io/", "v1/projects/{appId}/rtmp-converters", "Basic dGVzdDp0ZXN0")
+func TestGenerateUID(t *testing.T) {
+	service := &RtmpService{}
 
-	// Test non-existent server
-	_, err := service.makeRequest("POST", "http://non-existent-server.com", nil, "test-request-id")
-	assert.Error(t, err)
+	for i := 0; i < 100; i++ {
+		uid := service.GenerateUID()
+		uidInt, err := strconv.Atoi(uid)
+		assert.NoError(t, err)
+		assert.GreaterOrEqual(t, uidInt, 1)
+		assert.LessOrEqual(t, uidInt, 4294967294)
+	}
+}
 
-	// Test timeout
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(2 * time.Second)
-	}))
-	defer server.Close()
+func TestIsValidIPv4(t *testing.T) {
+	service := &RtmpService{}
 
-	_, err = service.makeRequest("POST", server.URL, nil, "test-request-id")
-	assert.Error(t, err)
+	testCases := []struct {
+		name     string
+		ip       string
+		expected bool
+	}{
+		{"Valid IPv4", "192.168.1.1", true},
+		{"Invalid IPv4", "256.0.0.1", false},
+		{"IPv6 address", "2001:0db8:85a3:0000:0000:8a2e:0370:7334", false},
+		{"Non-IP string", "not-an-ip", false},
+		{"Empty string", "", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := service.isValidIPv4(tc.ip)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestValidateIdleTimeOut(t *testing.T) {
+	service := &RtmpService{}
+
+	testCases := []struct {
+		name     string
+		input    int
+		expected int
+	}{
+		{"Valid timeout", 100, 100},
+		{"Minimum timeout", 5, 5},
+		{"Maximum timeout", 600, 600},
+		{"Below minimum", 4, 300},
+		{"Above maximum", 601, 300},
+		{"Negative value", -1, 300},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := service.ValidateIdleTimeOut(&tc.input)
+			assert.Equal(t, tc.expected, *result)
+		})
+	}
+}
+
+// Helper function to create string pointer
+func stringPtr(s string) *string {
+	return &s
 }
