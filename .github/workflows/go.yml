@@ -40,6 +40,8 @@ jobs:
           AGORA_BASE_URL: 'https://api.agora.io/'
           AGORA_CLOUD_RECORDING_URL: 'v1/apps/{appId}/cloud_recording'
           AGORA_RTT_URL: 'v1/projects/{appId}/rtsc/speech-to-text'
+          AGORA_RTMP_URL: 'v1/projects/{appId}/rtmp-converters'
+          AGORA_CLOUD_PLAYER_URL: 'v1/projects/{appId}/cloud-player'
           STORAGE_VENDOR: '1'
           STORAGE_REGION: '0'
           STORAGE_BUCKET: 'my-test-bucket-123'
