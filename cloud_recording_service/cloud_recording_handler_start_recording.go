@@ -31,7 +31,7 @@ func (s *CloudRecordingService) HandleStartRecordingReq(startReq StartRecordingR
 	// Construct the URL for the start recording endpoint.
 	url := fmt.Sprintf("%s/resourceid/%s/mode/%s/start", s.baseURL, resourceId, modeType)
 
-	fmt.Println("HandleAcquireResourceReq with url: ", url)
+	fmt.Println("HandleStartRecordingReq with url: ", url)
 
 	// Send a POST request to the start recording endpoint.
 	body, err := s.makeRequest("POST", url, startReq)

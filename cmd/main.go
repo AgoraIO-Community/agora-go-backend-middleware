@@ -16,19 +16,20 @@ import (
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/cloud_recording_service"
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/http_headers"
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/real_time_transcription_service"
+	"github.com/AgoraIO-Community/agora-go-backend-middleware/rtmp_service"
 	"github.com/AgoraIO-Community/agora-go-backend-middleware/token_service"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
-func main() {
+func setupServer() *http.Server {
+	log.Println("Starting setupServer")
 	// Load environment variables from a .env file, logging an error if the file cannot be loaded.
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Error loading .env file")
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: Error loading .env file. Using existing environment variables.")
 	}
 
-	// Retrieve essential configuration values from environment variables.
+	// Retrieve all configuration values from environment variables.
 	appIDEnv, appIDExists := os.LookupEnv("APP_ID")
 	appCertEnv, appCertExists := os.LookupEnv("APP_CERTIFICATE")
 	customerIDEnv, customerIDExists := os.LookupEnv("CUSTOMER_ID")
@@ -37,57 +38,94 @@ func main() {
 	baseURLEnv, baseURLExists := os.LookupEnv("AGORA_BASE_URL")
 	cloudRecordingURLEnv, cloudRecordingURLExists := os.LookupEnv("AGORA_CLOUD_RECORDING_URL")
 	realTimeTranscriptionURLEnv, realTimeTranscriptionURLExists := os.LookupEnv("AGORA_RTT_URL")
+	rtmpURLEnv, rtmpURLExists := os.LookupEnv("AGORA_RTMP_URL")
+	cloudPlayerURLEnv, cloudPlayerURLExists := os.LookupEnv("AGORA_CLOUD_PLAYER_URL")
 	storageVendorEnv, vendorExists := os.LookupEnv("STORAGE_VENDOR")
 	storageRegionEnv, regionExists := os.LookupEnv("STORAGE_REGION")
 	storageBucketEnv, bucketExists := os.LookupEnv("STORAGE_BUCKET")
 	storageAccessKeyEnv, accessKeyExists := os.LookupEnv("STORAGE_BUCKET_ACCESS_KEY")
 	storageSecretKeyEnv, secretKeyExists := os.LookupEnv("STORAGE_BUCKET_SECRET_KEY")
 
-	// Check for the presence of all required environment variables and exit if any are missing.
-	if !appIDExists || !appCertExists || !customerIDExists || !customerSecretExists || !baseURLExists || !cloudRecordingURLExists || !realTimeTranscriptionURLExists ||
-		!secretKeyExists || !vendorExists || !regionExists || !bucketExists || !accessKeyExists {
-		log.Fatal("FATAL ERROR: ENV not properly configured, check .env file for all required variables")
+	// Check for for the presence of core environment variables
+	if !appIDExists || !appCertExists {
+		log.Fatal("FATAL ERROR: ENV not properly configured, APP ID and APP CERTIFICATE are required.")
 	}
 
-	//replace the place-holder value with appID
-	cloudRecordingUrl := baseURLEnv + strings.Replace(cloudRecordingURLEnv, "{appId}", appIDEnv, 1)
-	realTimeTranscriptionUrl := baseURLEnv + strings.Replace(realTimeTranscriptionURLEnv, "{appId}", appIDEnv, 1)
-
-	// Convert storage vendor and region environment variables to integers.
-	storageVendorInt, storageVendorErr := strconv.Atoi(storageVendorEnv)
-	storageRegionInt, storageRegionErr := strconv.Atoi(storageRegionEnv)
-
-	if storageVendorErr != nil || storageRegionErr != nil {
-		log.Fatal("FATAL ERROR: Invalid STORAGE_VENDOR / STORAGE_REGION not properly configured")
-	}
-
-	// Configure storage settings based on environment variables.
-	storageConfig := cloud_recording_service.StorageConfig{
-		Vendor:    storageVendorInt,
-		Region:    storageRegionInt,
-		Bucket:    storageBucketEnv,
-		AccessKey: storageAccessKeyEnv,
-		SecretKey: storageSecretKeyEnv,
-	}
-
-	// Set up the Gin HTTP router with middleware for CORS, caching, and timestamp.
+	// Set up the Gin HTTP router with headers for CORS, caching, and timestamp.
 	router := gin.Default()
 	var httpHeaders = http_headers.NewHttpHeaders(corsAllowOrigin)
 	router.Use(httpHeaders.NoCache())
 	router.Use(httpHeaders.CORShttpHeaders())
-	router.Use(httpHeaders.TimestampMiddleware())
+	router.Use(httpHeaders.Timestamp())
 
-	// get basicAuth key
-	basicAuthKey := getBasicAuth(customerIDEnv, customerSecretEnv)
-	// Initialize token and cloud recording services.
+	// Initialize services & register routes.
 	tokenService := token_service.NewTokenService(appIDEnv, appCertEnv)
-	cloudRecordingService := cloud_recording_service.NewCloudRecordingService(appIDEnv, cloudRecordingUrl, basicAuthKey, tokenService, storageConfig)
-	realTimeTranscriptionService := real_time_transcription_service.NewRTTService(appIDEnv, realTimeTranscriptionUrl, basicAuthKey, tokenService, storageConfig)
-
-	// Register routes for token and cloud recording services.
 	tokenService.RegisterRoutes(router)
-	cloudRecordingService.RegisterRoutes(router)
-	realTimeTranscriptionService.RegisterRoutes(router)
+
+	if baseURLExists {
+		// Check for Basic Auth settings if baseURL is provided
+		if !customerIDExists || !customerSecretExists {
+			log.Fatal("FATAL ERROR: ENV not properly configured for Basic Auth, check .env file for all required variables")
+		}
+		// get basicAuth key
+		basicAuthKey := getBasicAuth(customerIDEnv, customerSecretEnv)
+
+		if cloudRecordingURLExists || realTimeTranscriptionURLExists {
+			if !vendorExists || !regionExists || !bucketExists || !accessKeyExists || !secretKeyExists {
+				log.Fatal("FATAL ERROR: ENV not properly configured for cloud storage, check .env file for all required variables")
+			}
+
+			// Convert storage vendor and region environment variables to integers.
+			storageVendorInt, storageVendorErr := strconv.Atoi(storageVendorEnv)
+			storageRegionInt, storageRegionErr := strconv.Atoi(storageRegionEnv)
+
+			if storageVendorErr != nil || storageRegionErr != nil {
+				log.Fatal("FATAL ERROR: Invalid STORAGE_VENDOR / STORAGE_REGION not properly configured")
+			}
+
+			// Configure storage settings based on environment variables.
+			storageConfig := cloud_recording_service.StorageConfig{
+				Vendor:    storageVendorInt,
+				Region:    storageRegionInt,
+				Bucket:    storageBucketEnv,
+				AccessKey: storageAccessKeyEnv,
+				SecretKey: storageSecretKeyEnv,
+			}
+
+			if cloudRecordingURLExists {
+				// Init Cloud Recording Service
+				cloudRecordingUrl := baseURLEnv + strings.Replace(cloudRecordingURLEnv, "{appId}", appIDEnv, 1) // replace the place-holder value with appID from Env
+				cloudRecordingService := cloud_recording_service.NewCloudRecordingService(appIDEnv, cloudRecordingUrl, basicAuthKey, tokenService, storageConfig)
+				cloudRecordingService.RegisterRoutes(router)
+			}
+
+			if realTimeTranscriptionURLExists {
+				// Init Real Time Transcription Service
+				realTimeTranscriptionUrl := baseURLEnv + strings.Replace(realTimeTranscriptionURLEnv, "{appId}", appIDEnv, 1) //replace the place-holder value with appID
+				realTimeTranscriptionService := real_time_transcription_service.NewRTTService(appIDEnv, realTimeTranscriptionUrl, basicAuthKey, tokenService, storageConfig)
+				realTimeTranscriptionService.RegisterRoutes(router)
+			}
+		}
+
+		if rtmpURLExists || cloudPlayerURLExists {
+			// support just rtmp or cloudplayer
+			rtmpURL, cloudPlayerURL := "", ""
+			// Check if rtmp and cloud player urls exist and replace the place-holder value with appID from Env
+			if rtmpURLExists {
+				rtmpURL = strings.Replace(rtmpURLEnv, "{appId}", appIDEnv, 1)
+			}
+			if cloudPlayerURLExists {
+				cloudPlayerURL = strings.Replace(cloudPlayerURLEnv, "{appId}", appIDEnv, 1)
+			}
+			// Init RTMP Service
+			rtmpService := rtmp_service.NewRtmpService(appIDEnv, baseURLEnv, rtmpURL, cloudPlayerURL, basicAuthKey, tokenService)
+			rtmpService.RegisterRoutes(router)
+		}
+	} else {
+		log.Print("WARNING: baseURLEnv Not Found - SKIPPING Cloud Recording, RTT and RTMP services ")
+	}
+
+	// Register healthcheck route
 	router.GET("/ping", Ping)
 
 	// Retrieve server port from environment variables or default to 8080.
@@ -102,11 +140,19 @@ func main() {
 		Handler: router,
 	}
 
+	log.Println("Server setup completed")
+	return server
+}
+
+func main() {
+	server := setupServer()
+
 	// Start the server in a separate goroutine to handle graceful shutdown.
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
+
 	}()
 
 	// Prepare to handle graceful shutdown.

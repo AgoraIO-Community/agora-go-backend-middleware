@@ -17,14 +17,6 @@ type ClientStartRTTRequest struct {
 	EnableNTPtimestamp *bool            `json:"enableNTPtimestamp,omitempty"` // Use to enable subtitle sync
 }
 
-type ClientStartRTTV1Request struct {
-	ChannelName        string    `json:"channelName"`                  // The name of the channel to transcribe
-	ProfanityFilter    *bool     `json:"profanityFilter,omitempty"`    // Optional Text filter, default is false
-	Destinations       *[]string `json:"destinations,omitempty"`       // List of output destination, if empty defaults to ["AgoraRTCDataStream"]
-	MaxIdleTime        *int      `json:"maxIdleTime,omitempty"`        // The default is 30 seconds. The unit is seconds, Range 5 seconds - 2592000 seconds (30 days)
-	EnableNTPtimestamp *bool     `json:"enableNTPtimestamp,omitempty"` // Use to enable subtitle sync
-}
-
 // AcquireBuilderTokenRequest defines the structure for a request to acquire a builder token for real time transcription
 // It includes the instance ID set by the developer. Best practice is to use the channel name.
 type AcquireBuilderTokenRequest struct {
@@ -100,6 +92,7 @@ func (s *AgpraRTTResponse) SetTimestamp(timestamp string) {
 // StopRTTResponse represents the response received from the Agora server after successfully starting a recording.
 // It includes the identifiers of the recording session along with an optional timestamp.
 type StopRTTResponse struct {
+	Status    string  `json:"status"`
 	Timestamp *string `json:"timestamp,omitempty"` // Optional timestamp for when the recording was started.
 }
 

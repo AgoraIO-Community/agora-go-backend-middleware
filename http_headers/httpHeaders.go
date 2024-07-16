@@ -45,7 +45,7 @@ func (m *HttpHeaders) CORShttpHeaders() gin.HandlerFunc {
 		}
 		// Set CORS headers to allow requests from the specified origin.
 		c.Header("Access-Control-Allow-Origin", origin)
-		c.Header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, DELETE, PATCH, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type")
 		// Handle pre-flight OPTIONS requests.
 		if c.Request.Method == "OPTIONS" {
@@ -73,9 +73,9 @@ func (m *HttpHeaders) isOriginAllowed(origin string) bool {
 	return false
 }
 
-// TimestampMiddleware adds a timestamp header to responses.
+// Timestamp adds a timestamp header to responses.
 // This can be useful for debugging and logging purposes to track when a response was generated.
-func (m *HttpHeaders) TimestampMiddleware() gin.HandlerFunc {
+func (m *HttpHeaders) Timestamp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next() // Proceed to the next middleware/handler.
 

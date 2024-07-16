@@ -34,8 +34,10 @@ func (s *RTTService) HandleStopReq(taskId string, builderToken string) (json.Raw
 		return nil, err
 	}
 
-	// Parse the response body into a struct to validate the response
-	var response = StopRTTResponse{}
+	// Successful response won't have body so create a success response for client
+	var response = StopRTTResponse{
+		Status: "Success",
+	}
 	// Append a timestamp to the Agora response for auditing and record-keeping purposes.
 	timestampBody, err := s.AddTimestamp(&response)
 	if err != nil {

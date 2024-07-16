@@ -36,11 +36,11 @@ type RTTService struct {
 func NewRTTService(appID string, baseURL string, basicAuth string, tokenService *token_service.TokenService, storageConfig cloud_recording_service.StorageConfig) *RTTService {
 	rand.Seed(time.Now().UnixNano()) // Ensure varied randomness in the application operations.
 	return &RTTService{
-		appID:         appID,
-		baseURL:       baseURL,
-		basicAuth:     basicAuth,
-		tokenService:  tokenService,
-		storageConfig: storageConfig,
+		appID:         appID,         // The Agora app ID used to identify the application within Agora services.
+		baseURL:       baseURL,       // The base URL for the Agora cloud recording API where all API requests are sent.
+		basicAuth:     basicAuth,     // Basic authentication credentials required for interacting with the Agora API.
+		tokenService:  tokenService,  // Pointer to an instance of TokenService used to generate authentication tokens for Agora API requests.
+		storageConfig: storageConfig, // Configuration for storage options including directory structure and file naming.
 	}
 }
 

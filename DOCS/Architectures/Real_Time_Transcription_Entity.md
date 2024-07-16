@@ -3,7 +3,6 @@
 ```mermaid
 erDiagram
     RTTService ||--o{ ClientStartRTTRequest : handles
-    RTTService ||--o{ ClientStartRTTV1Request : handles
     RTTService ||--o{ AcquireBuilderTokenRequest : handles
     RTTService ||--o{ StartRTTRequest : handles
     RTTService {
@@ -38,14 +37,6 @@ erDiagram
         bool EnableNTPtimestamp
     }
     ClientStartRTTRequest ||--|| TranslateConfig : includes
-
-    ClientStartRTTV1Request {
-        string ChannelName
-        bool ProfanityFilter
-        string[] Destinations
-        int MaxIdleTime
-        bool EnableNTPtimestamp
-    }
 
     AcquireBuilderTokenRequest {
         string InstanceId

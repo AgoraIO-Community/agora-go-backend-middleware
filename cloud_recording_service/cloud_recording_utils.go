@@ -21,8 +21,9 @@ func (s *CloudRecordingService) GenerateUID() string {
 
 // ValidateRecordingMode checks if a specific string is present within a slice of strings.
 // This is useful for determining if a particular item exists within a list.
-func (s *CloudRecordingService) ValidateRecordingMode(valideModes []string, modeToCheck string) bool {
-	for _, mode := range valideModes {
+func (s *CloudRecordingService) ValidateRecordingMode(modeToCheck string) bool {
+	validRecordingModes := []string{"individual", "mix", "web"}
+	for _, mode := range validRecordingModes {
 		if mode == modeToCheck {
 			return true
 		}
