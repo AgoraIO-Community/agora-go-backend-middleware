@@ -30,7 +30,7 @@ import (
 //   - Utilizes s.AddTimestamp to append a timestamp to the response.
 func (s *RtmpService) HandleUpdatePullReq(updateReq CloudPlayerStartRequest, converterId string, region string, requestID string, sequenceId *int) (json.RawMessage, error) {
 	// Construct the URL for the update rtmp endpoint.
-	url := fmt.Sprintf("%s/%s/%s/players/%s", s.baseURL, region, s.rtmpURL, converterId)
+	url := fmt.Sprintf("%s%s/%s/players/%s", s.baseURL, region, s.rtmpURL, converterId)
 
 	// Append sequenceId if available
 	if sequenceId != nil {
