@@ -33,7 +33,7 @@ import (
 //   - Utilizes s.AddTimestamp to append a timestamp to the response.
 func (s *RtmpService) HandleStartPushReq(startReq RtmpPushRequest, region string, regionHintIp *string, requestID string) (json.RawMessage, error) {
 	// Construct the URL for the start recording endpoint.
-	url := fmt.Sprintf("%s/%s/%s/rtmp-converters", s.baseURL, region, s.rtmpURL)
+	url := fmt.Sprintf("%s%s/%s", s.baseURL, region, s.rtmpURL)
 
 	// Append regionHintIp if available and valid IPv4 address.
 	if regionHintIp != nil && s.isValidIPv4(*regionHintIp) {

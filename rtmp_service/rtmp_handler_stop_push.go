@@ -29,7 +29,7 @@ import (
 //   - Utilizes s.AddTimestamp to append a timestamp to the response.
 func (s *RtmpService) HandleStopPushReq(converterId string, region string, requestID string) (json.RawMessage, error) {
 	// Construct the URL for the stop recording endpoint.
-	url := fmt.Sprintf("%s/%s/%s/rtmp-converters/%s", s.baseURL, region, s.rtmpURL, converterId)
+	url := fmt.Sprintf("%s%s/%s/%s", s.baseURL, region, s.rtmpURL, converterId)
 
 	fmt.Println("HandleStopPushReq with url: ", url)
 

@@ -33,7 +33,7 @@ import (
 //   - Utilizes s.AddTimestamp to append a timestamp to the response.
 func (s *RtmpService) HandleStartPullReq(startReq CloudPlayerStartRequest, region string, streamOriginIp *string, requestID string) (json.RawMessage, error) {
 	// Construct the URL for the start recording endpoint.
-	url := fmt.Sprintf("%s/%s/%s/players", s.baseURL, region, s.cloudPlayerURL)
+	url := fmt.Sprintf("%s%s/%s/players", s.baseURL, region, s.cloudPlayerURL)
 
 	// Append regionHintIp if available and valid IPv4 address.
 	if streamOriginIp != nil && s.isValidIPv4(*streamOriginIp) {
