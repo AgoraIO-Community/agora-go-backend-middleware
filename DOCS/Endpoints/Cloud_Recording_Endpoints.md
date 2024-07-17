@@ -8,7 +8,7 @@ Starts a cloud recording session.
 
 ### Endpoint
 
-`POST /cloud_recording/start`
+**POST:** `/cloud_recording/start`
 
 ### Request Body
 
@@ -41,7 +41,7 @@ Stops an ongoing cloud recording session.
 
 ### Endpoint
 
-`POST /cloud_recording/stop`
+**POST:** `/cloud_recording/stop`
 
 ### Request Body
 
@@ -85,7 +85,7 @@ Retrieves the status of a cloud recording session.
 
 ### Endpoint
 
-`GET /cloud_recording/status`
+**GET:** `/cloud_recording/status`
 
 ### Query Parameters
 
@@ -122,7 +122,7 @@ Updates the subscriber list for a cloud recording session.
 
 ### Endpoint
 
-`POST /cloud_recording/update/subscriber-list`
+**POST:** `/cloud_recording/update/subscriber-list`
 
 ### Request Body
 
@@ -157,7 +157,7 @@ Updates the layout of a cloud recording session.
 
 ### Endpoint
 
-`POST /cloud_recording/update/layout`
+**POST:** `/cloud_recording/update/layout`
 
 ### Request Body
 

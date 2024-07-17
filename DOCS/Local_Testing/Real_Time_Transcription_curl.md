@@ -6,7 +6,9 @@ This document provides curl examples for testing the backend's Real-Time Transcr
 
 Starts a real-time transcription session.
 
-`POST /rtt/start`
+```
+POST /rtt/start
+```
 
 (simple)
 
@@ -50,7 +52,9 @@ curl -X POST http://localhost:8080/rtt/start \
 
 Stops an ongoing real-time transcription session.
 
-`DELETE /rtt/stop/:taskId`
+```
+DELETE /rtt/stop/:taskId
+```
 
 ```bash
 curl -X DELETE http://localhost:8080/rtt/stop/your-task-id \
@@ -64,7 +68,9 @@ curl -X DELETE http://localhost:8080/rtt/stop/your-task-id \
 
 Retrieves the status of a real-time transcription session.
 
-`GET /rtt/status/:taskId`
+```
+GET /rtt/status/:taskId
+```
 
 ```bash
 curl -X GET "http://localhost:8080/rtt/status/your-task-id?builderToken=your-builder-token"
@@ -72,4 +78,4 @@ curl -X GET "http://localhost:8080/rtt/status/your-task-id?builderToken=your-bui
 
 Replace `localhost:8080` with your server's address if different.
 
-Note: All responses include a `timestamp` field for auditing purposes.
+> Note: All responses include a `timestamp` field for auditing purposes.
