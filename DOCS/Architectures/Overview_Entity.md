@@ -5,6 +5,7 @@ erDiagram
     TokenService ||--o{ CloudRecordingService : "provides tokens for"
     TokenService ||--o{ TokenRequest : handles
     TokenService ||--o{ RTTService : "provides tokens for"
+    TokenService ||--o{ RtmpService : "provides tokens for"
 
     TokenRequest {
         string TokenType
@@ -58,6 +59,54 @@ erDiagram
         TranslateConfig TranslateConfig
     }
 
+    RtmpService ||--o{ ClientStartRtmpRequest : handles
+    RtmpService ||--o{ ClientStopRtmpRequest : handles
+    RtmpService ||--o{ ClientUpdateRtmpRequest : handles
+    RtmpService ||--o{ ClientStartCloudPlayerRequest : handles
+    RtmpService ||--o{ ClientStopPullRequest : handles
+    RtmpService ||--o{ ClientUpdatePullRequest : handles
+    ClientStartRtmpRequest {
+        string ConverterName
+        string RtcChannel
+        string StreamUrl
+        string StreamKey
+        string Region
+        string RegionHintIp
+        bool UseTranscoding
+        string RtcStreamUid
+        PushAudioOptions AudioOptions
+        PushVideoOptions VideoOptions
+        int IdleTimeOut
+        int JitterBufferSizeMs
+    }
+    ClientStopRtmpRequest {
+        string ConverterId
+        string Region
+    }
+    ClientUpdateRtmpRequest {
+        string ConverterId
+        string Region
+        string StreamUrl
+        string StreamKey
+        string RtcChannel
+        PushVideoOptions VideoOptions
+        int JitterBufferSizeMs
+        int SequenceId
+    }
+    ClientStartCloudPlayerRequest {
+        string ChannelName
+        string StreamUrl
+        string Region
+        string Uid
+        string PlayerName
+        string StreamOriginIp
+        PullAudioOptions AudioOptions
+        PullVideoOptions VideoOptions
+        int IdleTimeOut
+        int PlayTs
+        string EncryptMode
+    }
+
     StorageConfig {
         int Vendor
         int Region
@@ -67,4 +116,5 @@ erDiagram
         string[] FileNamePrefix
         ExtensionParams ExtensionParams
     }
+
 ```
