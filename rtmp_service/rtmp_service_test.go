@@ -433,88 +433,6 @@ func TestUpdatePlayer(t *testing.T) {
 	})
 }
 
-// func TestGetPushList(t *testing.T) {
-// 	gin.SetMode(gin.TestMode)
-// 	router := gin.New()
-
-// 	mockService := &MockRtmpService{
-// 		GetPushListFunc: func(c *gin.Context) {
-// 			response := []ConverterResponse{
-// 				{
-// 					ConverterId: "converter_1",
-// 					CreateTs:    time.Now().Unix(),
-// 					UpdateTs:    time.Now().Unix(),
-// 					State:       "active",
-// 				},
-// 				{
-// 					ConverterId: "converter_2",
-// 					CreateTs:    time.Now().Unix(),
-// 					UpdateTs:    time.Now().Unix(),
-// 					State:       "inactive",
-// 				},
-// 			}
-// 			c.JSON(http.StatusOK, response)
-// 		},
-// 	}
-
-// 	router.GET("/rtmp/push/list", mockService.GetPushList)
-
-// 	t.Run("Get Push List", func(t *testing.T) {
-// 		w := httptest.NewRecorder()
-// 		req, _ := http.NewRequest("GET", "/rtmp/push/list", nil)
-// 		req.Header.Set("X-Request-ID", "test-request-id")
-// 		router.ServeHTTP(w, req)
-
-// 		assert.Equal(t, http.StatusOK, w.Code)
-// 		var response []ConverterResponse
-// 		err := json.Unmarshal(w.Body.Bytes(), &response)
-// 		assert.NoError(t, err)
-// 		assert.Len(t, response, 2)
-// 		assert.Equal(t, "converter_1", response[0].ConverterId)
-// 		assert.Equal(t, "converter_2", response[1].ConverterId)
-// 	})
-// }
-
-// func TestGetPullList(t *testing.T) {
-// 	gin.SetMode(gin.TestMode)
-// 	router := gin.New()
-
-// 	mockService := &MockRtmpService{
-// 		GetPullListFunc: func(c *gin.Context) {
-// 			response := []PlayerResponse{
-// 				{
-// 					PlayerId: "player_1",
-// 					CreateTs: time.Now().Unix(),
-// 					Uid:      stringPtr("uid_1"),
-// 				},
-// 				{
-// 					PlayerId: "player_2",
-// 					CreateTs: time.Now().Unix(),
-// 					Uid:      stringPtr("uid_2"),
-// 				},
-// 			}
-// 			c.JSON(http.StatusOK, response)
-// 		},
-// 	}
-
-// 	router.GET("/rtmp/pull/list", mockService.GetPullList)
-
-// 	t.Run("Get Pull List", func(t *testing.T) {
-// 		w := httptest.NewRecorder()
-// 		req, _ := http.NewRequest("GET", "/rtmp/pull/list", nil)
-// 		req.Header.Set("X-Request-ID", "test-request-id")
-// 		router.ServeHTTP(w, req)
-
-// 		assert.Equal(t, http.StatusOK, w.Code)
-// 		var response []PlayerResponse
-// 		err := json.Unmarshal(w.Body.Bytes(), &response)
-// 		assert.NoError(t, err)
-// 		assert.Len(t, response, 2)
-// 		assert.Equal(t, "player_1", response[0].PlayerId)
-// 		assert.Equal(t, "player_2", response[1].PlayerId)
-// 	})
-// }
-
 func TestValidateRegion(t *testing.T) {
 	service := &RtmpService{}
 
@@ -596,9 +514,4 @@ func TestValidateIdleTimeOut(t *testing.T) {
 			assert.Equal(t, tc.expected, *result)
 		})
 	}
-}
-
-// Helper function to create string pointer
-func stringPtr(s string) *string {
-	return &s
 }
