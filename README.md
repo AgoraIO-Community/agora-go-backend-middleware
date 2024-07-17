@@ -38,6 +38,7 @@ flowchart LR
         C[Token Service]
         D[Cloud Recording Service]
         E[Real-Time Transcription Service]
+        F[RTMP Service]
     end
 
     subgraph "External"
@@ -48,7 +49,8 @@ flowchart LR
     B <-->|/token| C
     B <-->|/cloud_recording| D
     B <-->|/rtt| E
-    D & E <-.->|API Calls| K
+    B <-->|/rtmp| F
+    D & E & F <-.->|API Calls| K
 
     classDef request fill:#f9f,stroke:#333,stroke-width:2px;
     classDef response fill:#bbf,stroke:#333,stroke-width:2px;
@@ -76,9 +78,18 @@ For detailed API specifications, and curl command examples to test the API endpo
 
 ### Real Time Transcription (RTT)
 
-`RTTService` holds all the necessary configurations and dependencies required for managing real-time transcription requests.
+`RTTService` holds all the necessary configurations and dependencies required for managing real-time transcription requestsħ
 
 - [Flow](./DOCS/Architectures/Real_Time_Transcription_Flow.md)
 - [Entity Relationships](./DOCS/Architectures/Real_Time_Transcription_Entity.md)
 - [Endpoints](./DOCS/Endpoints/Real_Time_Transcription.md)
 - [Curl Examples](./DOCS/Local_Testing/Real_Time_Transcription.md)
+
+### RTMP (Media Push & Pull)
+
+`RTMPService` holds all the necessary configurations and dependencies required for managing media push and cloud player requests.
+
+- [Flow](./DOCS/Architectures/RTMP_Flow.md)
+- [Entity Relationships](./DOCS/Architectures/RTMP_Entity.md)
+- [Endpoints](./DOCS/Endpoints/RTMP_Endpoints.md)
+- [Curl Examples](./DOCS/Local_Testing/RTMP_curl.md)
