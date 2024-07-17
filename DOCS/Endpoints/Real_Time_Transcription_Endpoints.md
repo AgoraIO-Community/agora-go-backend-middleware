@@ -8,7 +8,7 @@ Starts a real-time transcription session.
 
 ### Endpoint
 
-`POST /rtt/start`
+**POST:** `/rtt/start`
 
 ### Request Body
 
@@ -61,7 +61,7 @@ Stops an ongoing real-time transcription session.
 
 ### Endpoint
 
-`DELETE /rtt/stop/:taskId`
+**DELETE:** `/rtt/stop/:taskId`
 
 ### Request Body
 
@@ -88,7 +88,7 @@ Retrieves the status of a real-time transcription session.
 
 ### Endpoint
 
-`GET /rtt/status/:taskId`
+**GET:** `/rtt/status/:taskId`
 
 ### Query Parameters
 

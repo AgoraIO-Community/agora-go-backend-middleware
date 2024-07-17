@@ -15,21 +15,11 @@ flowchart LR
         C[Token Service]
         D[Cloud Recording Service]
         E[Real-Time Transcription Service]
-    end
-
-    subgraph "Handlers"
-        direction TB
-        F[Token Handlers]
-        G[Cloud Recording Handlers]
-        H[RTT Handlers]
+        L[RTMP Service]
     end
 
     subgraph "Shared Components"
         J[Storage Config]
-    end
-
-    subgraph "Middleware"
-        I[Middleware]
     end
 
     subgraph "External"
@@ -40,13 +30,10 @@ flowchart LR
     B <-->|/token| C
     B <-->|/cloud_recording| D
     B <-->|/rtt| E
-    C <--> F
-    D <--> G
-    E <--> H
-    D & E -.->|Uses| J
-    C & D & E -.->|Uses| I
-    G & H <-.->|API Calls| K
+    B <-->|/rtmp| L
 
+    D & E & L <-.->|API Calls| K
+    D & E -.->|Uses| J
     classDef request fill:#f9f,stroke:#333,stroke-width:2px;
     classDef response fill:#bbf,stroke:#333,stroke-width:2px;
 ```

@@ -6,7 +6,7 @@ This document provides curl examples for testing the backend's Token Generation 
 
 Generates a token based on the provided parameters.
 
-`POST /token/getNew`
+**POST:** `/token/getNew`
 
 ### RTC
 
