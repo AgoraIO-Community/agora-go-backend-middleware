@@ -64,8 +64,8 @@ For detailed API specifications, and curl command examples to test the API endpo
 
 - [Flow](./DOCS/Architectures/Token_Flow.md)
 - [Entity Relationships](./DOCS/Architectures/Token_Entity.md)
-- [Endpoints](./DOCS/Endpoints/Token.md)
-- [Curl Examples](./DOCS/Local_Testing/Token.md)
+- [Endpoints](./DOCS/Endpoints/Token_Endpoints.md)
+- [Curl Examples](./DOCS/Local_Testing/Token_curl.md)
 
 ### Cloud Recording
 
@@ -73,8 +73,8 @@ For detailed API specifications, and curl command examples to test the API endpo
 
 - [Flow](./DOCS/Architectures/Cloud_Recording_Flow.md)
 - [Entity Relationships](./DOCS/Architectures/Cloud_Recording_Entity.md)
-- [Endpoints](./DOCS/Endpoints/Cloud_Recording.md)
-- [Curl Examples](./DOCS/Local_Testing/Cloud_Recording.md)
+- [Endpoints](./DOCS/Endpoints/Cloud_Recording_Endpoints.md)
+- [Curl Examples](./DOCS/Local_Testing/Cloud_Recording_curl.md)
 
 ### Real Time Transcription (RTT)
 
@@ -82,8 +82,8 @@ For detailed API specifications, and curl command examples to test the API endpo
 
 - [Flow](./DOCS/Architectures/Real_Time_Transcription_Flow.md)
 - [Entity Relationships](./DOCS/Architectures/Real_Time_Transcription_Entity.md)
-- [Endpoints](./DOCS/Endpoints/Real_Time_Transcription.md)
-- [Curl Examples](./DOCS/Local_Testing/Real_Time_Transcription.md)
+- [Endpoints](./DOCS/Endpoints/Real_Time_Transcription_Endpoints.md)
+- [Curl Examples](./DOCS/Local_Testing/Real_Time_Transcription_curl.md)
 
 ### RTMP (Media Push & Pull)
 
