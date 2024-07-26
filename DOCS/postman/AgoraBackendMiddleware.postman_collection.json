@@ -1,0 +1,332 @@
+{
+  "info": {
+    "name": "Agora Backend Middleware",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Token Generation",
+      "item": [
+        {
+          "name": "Generate RTC Token",
+          "request": {
+            "url": "{{baseUrl}}/token/getNew",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tokenType\": \"rtc\",\n  \"channel\": \"testChannel\",\n  \"role\": \"publisher\",\n  \"uid\": \"12345\",\n  \"expire\": 3600\n}"
+            }
+          }
+        },
+        {
+          "name": "Generate RTM Token",
+          "request": {
+            "url": "{{baseUrl}}/token/getNew",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tokenType\": \"rtm\",\n  \"uid\": \"12345\",\n  \"expire\": 3600\n}"
+            }
+          }
+        },
+        {
+          "name": "Generate Chat Token",
+          "request": {
+            "url": "{{baseUrl}}/token/getNew",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tokenType\": \"chat\",\n  \"uid\": \"12345\",\n  \"expire\": 3600\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cloud Recording",
+      "item": [
+        {
+          "name": "Start Recording",
+          "request": {
+            "url": "{{baseUrl}}/cloud_recording/start",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelName\": \"test_channel\",\n  \"sceneMode\": \"realtime\",\n  \"recordingMode\": \"mix\",\n  \"excludeResourceIds\": []\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"resourceId\", jsonData.resourceId);",
+                  "pm.environment.set(\"sid\", jsonData.sid);",
+                  "pm.environment.set(\"uid\", jsonData.uid);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stop Recording",
+          "request": {
+            "url": "{{baseUrl}}/cloud_recording/stop",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cname\": \"test_channel\",\n  \"uid\": \"{{uid}}\",\n  \"resourceId\": \"{{resourceId}}\",\n  \"sid\": \"{{sid}}\",\n  \"recordingMode\": \"mix\",\n  \"async_stop\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Recording Status",
+          "request": {
+            "url": {
+              "raw": "{{baseUrl}}/cloud_recording/status?resourceId={{resourceId}}&sid={{sid}}&mode=mix",
+              "host": ["{{baseUrl}}"],
+              "path": ["cloud_recording", "status"],
+              "query": [
+                {
+                  "key": "resourceId",
+                  "value": "{{resourceId}}"
+                },
+                {
+                  "key": "sid",
+                  "value": "{{sid}}"
+                },
+                {
+                  "key": "mode",
+                  "value": "mix"
+                }
+              ]
+            },
+            "method": "GET"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Real-Time Transcription",
+      "item": [
+        {
+          "name": "Start RTT",
+          "request": {
+            "url": "{{baseUrl}}/rtt/start",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelName\": \"test_channel\",\n  \"languages\": [\"en-US\"],\n  \"subscribeAudioUids\": [\"410431250\", \"802976399\"],\n  \"maxIdleTime\": 300,\n  \"enableStorage\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"taskId\", jsonData.start.taskId);",
+                  "pm.environment.set(\"builderToken\", jsonData.acquire.tokenName);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stop RTT",
+          "request": {
+            "url": "{{baseUrl}}/rtt/stop/{{taskId}}",
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"builderToken\": \"{{builderToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get RTT Status",
+          "request": {
+            "url": {
+              "raw": "{{baseUrl}}/rtt/status/{{taskId}}?builderToken={{builderToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["rtt", "status", "{{taskId}}"],
+              "query": [
+                {
+                  "key": "builderToken",
+                  "value": "{{builderToken}}"
+                }
+              ]
+            },
+            "method": "GET"
+          }
+        }
+      ]
+    },
+    {
+      "name": "RTMP Service",
+      "item": [
+        {
+          "name": "Start RTMP Push",
+          "request": {
+            "url": "{{baseUrl}}/rtmp/push/start",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"converterName\": \"test-converter\",\n  \"rtcChannel\": \"test-channel\",\n  \"streamUrl\": \"rtmp://example.com/live/\",\n  \"streamKey\": \"stream-key\",\n  \"region\": \"na\",\n  \"useTranscoding\": true,\n  \"rtcStreamUid\": \"1234567890\",\n  \"idleTimeOut\": 300\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"converterId\", jsonData.converter.id);",
+                  "pm.environment.set(\"pushRegion\", jsonData.converter.region);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stop RTMP Push",
+          "request": {
+            "url": "{{baseUrl}}/rtmp/push/stop",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"converterId\": \"{{converterId}}\",\n  \"region\": \"{{pushRegion}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Start RTMP Pull",
+          "request": {
+            "url": "{{baseUrl}}/rtmp/pull/start",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelName\": \"test-channel\",\n  \"streamUrl\": \"rtmp://example.com/live/stream\",\n  \"region\": \"na\",\n  \"uid\": \"1234567890\",\n  \"idleTimeOut\": 300\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"playerId\", jsonData.player.id);",
+                  "pm.environment.set(\"pullRegion\", jsonData.player.region);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stop RTMP Pull",
+          "request": {
+            "url": "{{baseUrl}}/rtmp/pull/stop",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-ID",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playerId\": \"{{playerId}}\",\n  \"region\": \"{{pullRegion}}\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ]
+}
