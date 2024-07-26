@@ -1,0 +1,253 @@
+{
+  "name": "Agora Backend Middleware",
+  "version": "1",
+  "collections": [
+    {
+      "name": "Token Generation",
+      "items": [
+        {
+          "name": "Generate RTC Token",
+          "request": {
+            "url": "{{baseUrl}}/token/getNew",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tokenType\": \"rtc\",\n  \"channel\": \"testChannel\",\n  \"role\": \"publisher\",\n  \"uid\": \"12345\",\n  \"expire\": 3600\n}"
+            }
+          }
+        },
+        {
+          "name": "Generate RTM Token",
+          "request": {
+            "url": "{{baseUrl}}/token/getNew",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tokenType\": \"rtm\",\n  \"uid\": \"12345\",\n  \"expire\": 3600\n}"
+            }
+          }
+        },
+        {
+          "name": "Generate Chat Token",
+          "request": {
+            "url": "{{baseUrl}}/token/getNew",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tokenType\": \"chat\",\n  \"uid\": \"12345\",\n  \"expire\": 3600\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cloud Recording",
+      "items": [
+        {
+          "name": "Start Recording",
+          "request": {
+            "url": "{{baseUrl}}/cloud_recording/start",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelName\": \"test_channel\",\n  \"sceneMode\": \"realtime\",\n  \"recordingMode\": \"mix\",\n  \"excludeResourceIds\": []\n}"
+            }
+          },
+          "script": {
+            "exec": [
+              "const response = JSON.parse(bru.response.body);",
+              "bru.setEnvVariable('resourceId', response.resourceId);",
+              "bru.setEnvVariable('sid', response.sid);",
+              "bru.setEnvVariable('uid', response.uid);"
+            ],
+            "type": "js"
+          }
+        },
+        {
+          "name": "Stop Recording",
+          "request": {
+            "url": "{{baseUrl}}/cloud_recording/stop",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cname\": \"test_channel\",\n  \"uid\": \"{{uid}}\",\n  \"resourceId\": \"{{resourceId}}\",\n  \"sid\": \"{{sid}}\",\n  \"recordingMode\": \"mix\",\n  \"async_stop\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Recording Status",
+          "request": {
+            "url": "{{baseUrl}}/cloud_recording/status",
+            "method": "GET",
+            "params": {
+              "resourceId": "{{resourceId}}",
+              "sid": "{{sid}}",
+              "mode": "mix"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Real-Time Transcription",
+      "items": [
+        {
+          "name": "Start RTT",
+          "request": {
+            "url": "{{baseUrl}}/rtt/start",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelName\": \"test_channel\",\n  \"languages\": [\"en-US\"],\n  \"subscribeAudioUids\": [\"410431250\", \"802976399\"],\n  \"maxIdleTime\": 300,\n  \"enableStorage\": false\n}"
+            }
+          },
+          "script": {
+            "exec": [
+              "const response = JSON.parse(bru.response.body);",
+              "bru.setEnvVariable('taskId', response.start.taskId);",
+              "bru.setEnvVariable('builderToken', response.acquire.tokenName);"
+            ],
+            "type": "js"
+          }
+        },
+        {
+          "name": "Stop RTT",
+          "request": {
+            "url": "{{baseUrl}}/rtt/stop/{{taskId}}",
+            "method": "DELETE",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"builderToken\": \"{{builderToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get RTT Status",
+          "request": {
+            "url": "{{baseUrl}}/rtt/status/{{taskId}}",
+            "method": "GET",
+            "params": {
+              "builderToken": "{{builderToken}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "RTMP Service",
+      "items": [
+        {
+          "name": "Start RTMP Push",
+          "request": {
+            "url": "{{baseUrl}}/rtmp/push/start",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json",
+              "X-Request-ID": "{{$randomUUID}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"converterName\": \"test-converter\",\n  \"rtcChannel\": \"test-channel\",\n  \"streamUrl\": \"rtmp://example.com/live/\",\n  \"streamKey\": \"stream-key\",\n  \"region\": \"na\",\n  \"useTranscoding\": true,\n  \"rtcStreamUid\": \"1234567890\",\n  \"idleTimeOut\": 300\n}"
+            }
+          },
+          "script": {
+            "exec": [
+              "const response = JSON.parse(bru.response.body);",
+              "bru.setEnvVariable('converterId', response.converter.id);",
+              "bru.setEnvVariable('pushRegion', response.converter.region);"
+            ],
+            "type": "js"
+          }
+        },
+        {
+          "name": "Stop RTMP Push",
+          "request": {
+            "url": "{{baseUrl}}/rtmp/push/stop",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json",
+              "X-Request-ID": "{{$randomUUID}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"converterId\": \"{{converterId}}\",\n  \"region\": \"{{pushRegion}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Start RTMP Pull",
+          "request": {
+            "url": "{{baseUrl}}/rtmp/pull/start",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json",
+              "X-Request-ID": "{{$randomUUID}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelName\": \"test-channel\",\n  \"streamUrl\": \"rtmp://example.com/live/stream\",\n  \"region\": \"na\",\n  \"uid\": \"1234567890\",\n  \"idleTimeOut\": 300\n}"
+            }
+          },
+          "script": {
+            "exec": [
+              "const response = JSON.parse(bru.response.body);",
+              "bru.setEnvVariable('playerId', response.player.id);",
+              "bru.setEnvVariable('pullRegion', response.player.region);"
+            ],
+            "type": "js"
+          }
+        },
+        {
+          "name": "Stop RTMP Pull",
+          "request": {
+            "url": "{{baseUrl}}/rtmp/pull/stop",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json",
+              "X-Request-ID": "{{$randomUUID}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playerId\": \"{{playerId}}\",\n  \"region\": \"{{pullRegion}}\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "environments": [
+    {
+      "name": "Development",
+      "variables": {
+        "baseUrl": "http://localhost:8080"
+      }
+    },
+    {
+      "name": "Production",
+      "variables": {
+        "baseUrl": "https://your-production-url.com"
+      }
+    }
+  ]
+}
