@@ -13,8 +13,6 @@ Key features include:
 - Real-time transcription control
 - RTMP push and pull services
 
-By using this middleware, you can streamline your development process and quickly implement Agora's powerful real-time cloud services in your applications.
-
 This guide will walk you through setting up and using the Agora Middleware Service, helping you leverage its capabilities to enhance your development workflow.
 
 ## Table of Contents
@@ -420,8 +418,8 @@ Both RTMP Push and Pull services support various configuration options for audio
 
 To ensure your middleware service is working correctly, you can test the APIs using tools like cURL, Bruno or Postman. We've prepared comprehensive set of examples for each service.
 
-- Bruno:[agora-backend-middleware.bru](./bruno/agora-backend-middleware.bru)
-- Postman [Agora Backend Middleware.postman_collection](./postman/AgoraBackendMiddleware.postman_collection.json).
+- Bruno: [agora-backend-middleware.bru](./bruno/agora-backend-middleware.bru)
+- Postman: [Agora Backend Middleware.postman_collection](./postman/AgoraBackendMiddleware.postman_collection.json).
 - cURL example requests:
 
   1. [Token Service](./Local_Testing/Token_curl.md)
