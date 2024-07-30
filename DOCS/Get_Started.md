@@ -1,40 +1,11 @@
 # Get Started with the Agora Middleware Service
 
-The Agora Middleware Service is a Go-based backend solution designed to simplify adoption of Agora's RESTful APIs. It serves two primary purposes:
+The Agora Middleware Service is a Go-based backend solution that simplifies integrating Agora's cloud services into your applications. It provides a set of RESTful APIs for token generation, cloud recording management, and real-time transcription. 
+The Agora Middleware Service serves two primary purposes:
 
 1. For front-end developers: It provides a ready-to-use backend that handles Agora API interactions, allowing you to focus on building your application's user interface and features.
 
 2. For backend developers: It offers a quick deployment option to support front-end teams working with Agora SDKs, reducing the time and effort needed to set up a custom backend.
-
-Key features include:
-
-- Token generation for RTC, RTM, and Chat services
-- Cloud recording management
-- Real-time transcription control
-- RTMP push and pull services
-
-This guide will walk you through setting up and using the Agora Middleware Service, helping you leverage its capabilities to enhance your development workflow.
-
-## Table of Contents
-
-1. [Introduction](#introduction)
-2. [Prerequisites](#prerequisites)
-3. [Installation](#installation)
-4. [Configuration](#configuration)
-5. [Running the Service](#running-the-service)
-6. [API Overview](#api-overview)
-   - [Token Generation](#token-generation)
-   - [Cloud Recording](#cloud-recording)
-   - [Real-Time Transcription](#real-time-transcription)
-   - [RTMP Service](#rtmp-service)
-7. [Testing the APIs](#testing-the-apis)
-8. [Best Practices](#best-practices)
-9. [Troubleshooting](#troubleshooting)
-10. [Support](#support)
-
-## Introduction
-
-The Agora Middleware Service is a Go-based backend solution that simplifies the process of integrating Agora's cloud services into your applications. It provides a set of RESTful APIs for token generation, cloud recording management, and real-time transcription. By using this middleware, you can offload complex server-side operations and focus on building great user experiences in your applications.
 
 Key features of the middleware service include:
 
@@ -46,6 +17,22 @@ Key features of the middleware service include:
 - Easy-to-use RESTful API endpoints
 
 Let's dive into setting up and using this powerful tool!
+
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+1. [Installation](#installation)
+1. [Configuration](#configuration)
+1. [Running the Service](#running-the-service)
+1. [API Overview](#api-overview)
+   - [Token Generation](#token-generation)
+   - [Cloud Recording](#cloud-recording)
+   - [Real-Time Transcription](#real-time-transcription)
+   - [RTMP Service](#rtmp-service)
+1. [Testing the APIs](#testing-the-apis)
+1. [Best Practices](#best-practices)
+1. [Troubleshooting](#troubleshooting)
+1. [Support](#support)
 
 ## Prerequisites
 
@@ -276,8 +263,6 @@ Key endpoints:
 - Start RTT: `POST /rtt/start`
 - Stop RTT: `POST /rtt/stop/:taskId`
 - Query RTT Status: `GET /rtt/status/:taskId`
-
-Example start RTT request body:
 
 ```mermaid
 flowchart LR
