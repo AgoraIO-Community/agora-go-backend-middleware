@@ -102,7 +102,8 @@ func (s *RTTService) StartRTT(c *gin.Context) {
 	publisherBotTokenRequest := token_service.TokenRequest{
 		TokenType: "rtc",
 		Channel:   clientStartReq.ChannelName,
-		Uid:       subscriberBotUid,
+		Uid:       publisherBotUid,
+		RtcRole:    "publisher",
 	}
 	publisherBotToken, err := s.tokenService.GenRtcToken(publisherBotTokenRequest)
 	if err != nil {
